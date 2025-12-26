@@ -10,9 +10,9 @@
     <title>ระบบตรวจสอบสถานที่</title>
     
     <!-- PWA Manifest -->
-   
-    <link rel="icon" type="image/png" href="https://img.icons8.com/cotton/100/qr-code.png">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/cotton/100/qr-code.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="https://img.icons8.com/cotton/64/qr-code--v1.png">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/cotton/64/qr-code--v1.png">
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -960,7 +960,7 @@
         <div id="login-page" class="page active">
             <div class="header">
                 <div class="logo">
-                    <img src="https://img.icons8.com/cotton/100/qr-code.png" alt="QR Code">
+                    <img src="https://img.icons8.com/cotton/64/qr-code--v1.png" alt="QR Code">
                 </div>
                 <h1>ระบบตรวจสอบสถานที่</h1>
                 <p>QR Code Location Inspection</p>
@@ -1018,7 +1018,7 @@
                     </div>
                 </div>
                 
-                
+                <div class="action-buttons" style="grid-template-columns: 1fr;">
                     <button class="btn btn-warning" onclick="showDataPage()">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                         ดูข้อมูล
@@ -1381,9 +1381,13 @@
         
         function stopScanner() {
             if (qrScanner) {
-                qrScanner.stop().then(() => {
-                    try { qrScanner.clear(); } catch(e) {}
-                }).catch(() => {});
+                try {
+                    qrScanner.stop().then(() => {
+                        try { qrScanner.clear(); } catch(e) {}
+                    }).catch(() => {});
+                } catch(e) {
+                    console.log('Scanner stop error:', e);
+                }
             }
         }
         
@@ -1711,10 +1715,16 @@
         }
         
         function logout() {
-            stopScanner();
+            try {
+                stopScanner();
+            } catch(e) {
+                console.log('Scanner already stopped');
+            }
             stopAutoRefresh();
             clearSession();
             document.getElementById('login-form').reset();
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
             showPage('login-page');
         }
         
