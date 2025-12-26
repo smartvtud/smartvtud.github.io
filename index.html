@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="msapplication-navbutton-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>ระบบตรวจสอบสถานที่</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="https://img.icons8.com/keek/72/airplane-take-off.png">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/keek/72/airplane-take-off.png">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --secondary: #6366f1;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --gray: #64748b;
+            --gray-light: #94a3b8;
+            --white: #ffffff;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: var(--dark);
+            min-height: 100vh;
+            color: var(--white);
+            overflow-x: hidden;
+        }
+        
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(14, 165, 233, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.05) 0%, transparent 30%);
+        }
+        
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container.desktop-mode {
+            max-width: 1400px;
+        }
+        
+        .page {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .header {
+            text-align: center;
+            padding: 40px 0 30px;
+        }
+        
+        .logo {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            box-shadow: 0 20px 40px rgba(14, 165, 233, 0.3);
+            animation: pulse 3s ease-in-out infinite;
+            overflow: hidden;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 20px 40px rgba(14, 165, 233, 0.3); }
+            50% { transform: scale(1.02); box-shadow: 0 25px 50px rgba(14, 165, 233, 0.4); }
+        }
+        
+        .logo img {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--white) 0%, var(--gray-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            color: var(--gray-light);
+            font-size: 0.95rem;
+            font-weight: 300;
+        }
+        
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--gray-light);
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            color: var(--white);
+            font-family: 'Prompt', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+        }
+        
+        .form-input::placeholder {
+            color: var(--gray);
+        }
+        
+        .password-wrapper {
+            position: relative;
+        }
+        
+        .password-wrapper .form-input {
+            padding-right: 50px;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .password-toggle svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--gray);
+            transition: fill 0.3s;
+        }
+        
+        .password-toggle:hover svg {
+            fill: var(--primary);
+        }
+        
+        textarea.form-input {
+            resize: none;
+            min-height: 100px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 18px 24px;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Prompt', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--white);
+            box-shadow: 0 10px 30px rgba(14, 165, 233, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(14, 165, 233, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: var(--white);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: var(--white);
+        }
+        
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+            color: var(--dark);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3);
+        }
+        
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .scanner-container {
+            margin-bottom: 24px;
+        }
+        
+        #qr-reader {
+            border-radius: 20px;
+            overflow: hidden;
+            border: 3px solid rgba(14, 165, 233, 0.3);
+        }
+        
+        .scanner-hint {
+            text-align: center;
+            color: var(--gray-light);
+            font-size: 0.875rem;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .scanner-hint svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--primary);
+            animation: scan 2s ease-in-out infinite;
+        }
+        
+        @keyframes scan {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .location-info {
+            background: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .location-info h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .location-info h3 svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--primary);
+        }
+        
+        .location-details {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--gray-light);
+        }
+        
+        .location-details span {
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .current-location-box {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .current-location-box .label {
+            color: var(--success);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .current-location-box .coords {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--gray-light);
+        }
+        
+        .status-options {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .status-option {
+            flex: 1;
+            padding: 16px;
+            border-radius: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.6);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .status-option.normal.selected {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.15);
+        }
+        
+        .status-option.abnormal.selected {
+            border-color: var(--danger);
+            background: rgba(239, 68, 68, 0.15);
+        }
+        
+        .status-option:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .status-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+        }
+        
+        .status-option.normal .status-icon {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .status-option.abnormal .status-icon {
+            background: rgba(239, 68, 68, 0.2);
+        }
+        
+        .status-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .status-option.normal svg {
+            fill: var(--success);
+        }
+        
+        .status-option.abnormal svg {
+            fill: var(--danger);
+        }
+        
+        .status-text {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        
+        .image-upload-section {
+            margin-bottom: 24px;
+        }
+        
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .image-upload-box {
+            aspect-ratio: 1;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            background: rgba(15, 23, 42, 0.4);
+        }
+        
+        .image-upload-box:hover {
+            border-color: var(--primary);
+            background: rgba(14, 165, 233, 0.1);
+        }
+        
+        .image-upload-box svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--gray);
+            margin-bottom: 8px;
+        }
+        
+        .image-upload-box span {
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+        
+        .image-upload-box.has-image {
+            border-style: solid;
+            border-color: var(--success);
+        }
+        
+        .image-upload-box img {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .image-upload-box .remove-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .image-upload-box .remove-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: white;
+            margin: 0;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 14px;
+            margin-bottom: 24px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .user-details {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .user-avatar svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+        
+        .user-name {
+            font-weight: 500;
+        }
+        
+        .user-role {
+            font-size: 0.8rem;
+            color: var(--gray-light);
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .logout-btn {
+            padding: 10px 16px;
+            background: rgba(239, 68, 68, 0.15);
+            border: none;
+            border-radius: 10px;
+            color: var(--danger);
+            font-family: 'Prompt', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+        
+        .back-btn {
+            padding: 10px 16px;
+            background: rgba(14, 165, 233, 0.15);
+            border: none;
+            border-radius: 10px;
+            color: var(--primary);
+            font-family: 'Prompt', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .back-btn:hover {
+            background: rgba(14, 165, 233, 0.25);
+        }
+        
+        .back-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--primary);
+        }
+        
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .alert svg {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        
+        .alert-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+        
+        .alert-error svg {
+            fill: var(--danger);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .modal-content {
+            background: var(--dark-light);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            max-width: 360px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(16, 185, 129, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+        
+        .modal-icon svg {
+            width: 40px;
+            height: 40px;
+            fill: var(--success);
+        }
+        
+        .modal-content h2 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+        
+        .modal-content p {
+            color: var(--gray-light);
+            margin-bottom: 28px;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .action-buttons .btn {
+            padding: 14px 16px;
+            font-size: 0.9rem;
+        }
+        
+        /* Data Table Styles */
+        .data-table-wrapper {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .data-table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 1100px;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        .data-table th {
+            background: #1a3a52;
+            font-weight: 600;
+            color: var(--primary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .data-table tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        .data-table td {
+            background: rgba(30, 41, 59, 0.3);
+        }
+        
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .status-badge.normal {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+        
+        .status-badge.abnormal {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+        
+        .image-icons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .image-icon-btn {
+            width: 34px;
+            height: 34px;
+            background: rgba(14, 165, 233, 0.2);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .image-icon-btn:hover {
+            background: rgba(14, 165, 233, 0.4);
+            transform: scale(1.1);
+        }
+        
+        .image-icon-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--primary);
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray-light);
+        }
+        
+        .page-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .page-title svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--primary);
+        }
+        
+        .page-title h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .total-records {
+            background: rgba(14, 165, 233, 0.15);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--primary);
+            margin-left: auto;
+        }
+        
+        .auto-refresh-info {
+            background: rgba(16, 185, 129, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--success);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .auto-refresh-info svg {
+            width: 14px;
+            height: 14px;
+            fill: var(--success);
+            animation: spin 2s linear infinite;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .pagination-btn {
+            min-width: 40px;
+            height: 40px;
+            padding: 0 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 10px;
+            color: var(--white);
+            font-family: 'Prompt', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            background: rgba(14, 165, 233, 0.3);
+        }
+        
+        .pagination-btn.active {
+            background: var(--primary);
+            font-weight: 600;
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .pagination-info {
+            color: var(--gray-light);
+            font-size: 0.85rem;
+            margin: 0 8px;
+        }
+        
+        .desktop-mode-info {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--warning);
+            font-size: 0.9rem;
+        }
+        
+        .desktop-mode-info svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--warning);
+            flex-shrink: 0;
+        }
+        
+        @media (max-width: 380px) {
+            .container {
+                padding: 16px;
+            }
+            
+            .card {
+                padding: 24px;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+    
+    <div class="container" id="main-container">
+        <!-- Login Page -->
+        <div id="login-page" class="page active">
+            <div class="header">
+                <div class="logo">
+                    <img src="https://img.icons8.com/cotton/64/qr-code--v1.png" alt="QR Code">
+                </div>
+                <h1>ระบบตรวจสอบสถานที่</h1>
+                <p>QR Code Location Inspection</p>
+            </div>
+            
+            <div class="card">
+                <div id="login-alert"></div>
+                
+                <form id="login-form">
+                    <div class="form-group">
+                        <label class="form-label">ชื่อผู้ใช้</label>
+                        <input type="text" id="username" class="form-input" placeholder="กรอกชื่อผู้ใช้" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">รหัสผ่าน</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" class="form-input" placeholder="กรอกรหัสผ่าน" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword()">
+                                <svg id="eye-icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                                <svg id="eye-off-icon" style="display:none" viewBox="0 0 24 24"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="login-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/></svg>
+                        <span>เข้าสู่ระบบ</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Scanner Page -->
+        <div id="scanner-page" class="page">
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-avatar">
+                        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </div>
+                    <div>
+                        <div class="user-name" id="display-name">ผู้ใช้งาน</div>
+                        <div class="user-role" id="display-position">ผู้ตรวจสอบ</div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
+            </div>
+            
+            <div class="card">
+                <div class="scanner-container">
+                    <div id="qr-reader"></div>
+                    <div class="scanner-hint">
+                        <svg viewBox="0 0 24 24"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zm1.5 0h1.5V16H16v-1.5zm0 1.5v1.5h-1.5V16H16zm1.5 0H19v1.5h-1.5V16zm0 1.5v1.5H16V17.5h1.5zm1.5 0H19V19h-1.5v-1.5zM13 16h1.5v1.5H13V16zm0 1.5v1.5h1.5V17.5H13z"/></svg>
+                        เล็งกล้องไปที่ QR Code
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-outline" onclick="stopScanner()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        หยุดสแกน
+                    </button>
+                    <button class="btn btn-warning" onclick="showDataPage()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                        ดูข้อมูล
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form Page -->
+        <div id="form-page" class="page">
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-avatar">
+                        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </div>
+                    <div>
+                        <div class="user-name" id="display-name-form">ผู้ใช้งาน</div>
+                        <div class="user-role" id="display-position-form">ผู้ตรวจสอบ</div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
+            </div>
+            
+            <div class="card">
+                <div id="form-alert"></div>
+                
+                <div class="location-info">
+                    <h3>
+                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                        <span id="location-name">สถานที่</span>
+                    </h3>
+                    <div class="location-details">
+                        <span>ละติจูด: <span id="latitude">-</span></span>
+                        <span>ลองจิจูด: <span id="longitude">-</span></span>
+                    </div>
+                    <div class="current-location-box">
+                        <div class="label">📍 พิกัดปัจจุบันของคุณ</div>
+                        <div class="coords" id="current-location">กำลังดึงพิกัด...</div>
+                    </div>
+                </div>
+                
+                <form id="inspection-form">
+                    <label class="form-label">สถานะการตรวจสอบ</label>
+                    <div class="status-options">
+                        <div class="status-option normal" onclick="selectStatus(this, 'ปกติ')">
+                            <div class="status-icon">
+                                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            </div>
+                            <div class="status-text">ปกติ</div>
+                        </div>
+                        <div class="status-option abnormal" onclick="selectStatus(this, 'ไม่ปกติ')">
+                            <div class="status-icon">
+                                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            </div>
+                            <div class="status-text">ไม่ปกติ</div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="selected-status" value="">
+                    
+                    <div class="form-group">
+                        <label class="form-label">หมายเหตุ</label>
+                        <textarea id="remark" class="form-input" placeholder="กรอกรายละเอียดเพิ่มเติม (ถ้ามี)"></textarea>
+                    </div>
+                    
+                    <div class="image-upload-section">
+                        <label class="form-label">รูปภาพประกอบ (สูงสุด 4 รูป)</label>
+                        <div class="image-grid">
+                            <div class="image-upload-box" id="image-box-1" onclick="triggerUpload(1)">
+                                <input type="file" id="file-input-1" accept="image/*" capture="environment" onchange="handleImageUpload(this, 1)" style="display:none">
+                                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                                <span>รูปที่ 1</span>
+                            </div>
+                            <div class="image-upload-box" id="image-box-2" onclick="triggerUpload(2)">
+                                <input type="file" id="file-input-2" accept="image/*" capture="environment" onchange="handleImageUpload(this, 2)" style="display:none">
+                                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                                <span>รูปที่ 2</span>
+                            </div>
+                            <div class="image-upload-box" id="image-box-3" onclick="triggerUpload(3)">
+                                <input type="file" id="file-input-3" accept="image/*" capture="environment" onchange="handleImageUpload(this, 3)" style="display:none">
+                                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                                <span>รูปที่ 3</span>
+                            </div>
+                            <div class="image-upload-box" id="image-box-4" onclick="triggerUpload(4)">
+                                <input type="file" id="file-input-4" accept="image/*" capture="environment" onchange="handleImageUpload(this, 4)" style="display:none">
+                                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                                <span>รูปที่ 4</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success" id="submit-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm2 16H5V5h11.17L19 7.83V19zm-7-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zM6 6h9v4H6z"/></svg>
+                        <span>บันทึกข้อมูล</span>
+                    </button>
+                    
+                    <button type="button" class="btn btn-outline" style="margin-top: 12px;" onclick="backToScanner()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                        สแกนใหม่
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Data Table Page -->
+        <div id="data-page" class="page">
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-avatar">
+                        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </div>
+                    <div>
+                        <div class="user-name" id="display-name-data">ผู้ใช้งาน</div>
+                        <div class="user-role" id="display-position-data">ผู้ตรวจสอบ</div>
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="back-btn" id="back-btn-mobile" onclick="backToScannerFromData()">
+                        <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                        กลับ
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="desktop-mode-info" id="desktop-info" style="display:none">
+                    <svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>
+                    <span>โหมดดูข้อมูลบนคอมพิวเตอร์ - สามารถดูข้อมูลได้อย่างเดียว</span>
+                </div>
+                
+                <div class="page-title">
+                    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    <h2>ประวัติการตรวจสอบ</h2>
+                    <span class="total-records" id="total-records">0 รายการ</span>
+                    <span class="auto-refresh-info">
+                        <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                        อัปเดตทุก 5 นาที
+                    </span>
+                </div>
+                
+                <div class="data-table-wrapper">
+                    <div class="data-table-container" id="data-container">
+                        <div class="no-data">
+                            <span class="loading"></span>
+                            <p style="margin-top: 12px;">กำลังโหลดข้อมูล...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Success Modal -->
+    <div class="modal-overlay" id="success-modal">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            </div>
+            <h2>บันทึกสำเร็จ!</h2>
+            <p id="success-message">ข้อมูลการตรวจสอบถูกบันทึกเรียบร้อยแล้ว</p>
+            <button class="btn btn-primary" onclick="closeModalAndScan()">สแกนต่อ</button>
+        </div>
+    </div>
+    
+    <script>
+        // ================================
+        // ⚠️ แก้ไข URL นี้เป็น Web App URL ของคุณ
+        // ================================
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzuTM_RbC-Lu4xrHKRDgPHmSS5vyYhiJDTampFviCF5GFTQvDKdhP8qHmHZsVoK8hIi/exec';
+        
+        const ITEMS_PER_PAGE = 10;
+        const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 นาที
+        
+        let currentUser = null;
+        let qrScanner = null;
+        let locationData = { name: '', latitude: '', longitude: '' };
+        let currentLocationData = { lat: '', lng: '' };
+        let uploadedImages = [null, null, null, null];
+        let selectedStatus = '';
+        let allData = [];
+        let currentPage = 1;
+        let isDesktopMode = false;
+        let autoRefreshTimer = null;
+        
+        // ===== Check Mobile Device =====
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+                || window.innerWidth <= 768;
+        }
+        
+        // ===== Get Current Location =====
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentLocationData.lat = position.coords.latitude.toFixed(6);
+                        currentLocationData.lng = position.coords.longitude.toFixed(6);
+                        document.getElementById('current-location').textContent = 
+                            `${currentLocationData.lat}, ${currentLocationData.lng}`;
+                    },
+                    (error) => {
+                        console.error('Geolocation error:', error);
+                        document.getElementById('current-location').textContent = 'ไม่สามารถดึงพิกัดได้';
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            } else {
+                document.getElementById('current-location').textContent = 'เบราว์เซอร์ไม่รองรับ GPS';
+            }
+        }
+        
+        // ===== Session Storage =====
+        function saveSession() {
+            if (currentUser) {
+                sessionStorage.setItem('qr_inspection_user', JSON.stringify(currentUser));
+            }
+        }
+        
+        function loadSession() {
+            const saved = sessionStorage.getItem('qr_inspection_user');
+            if (saved) {
+                currentUser = JSON.parse(saved);
+                updateUserDisplay();
+                return true;
+            }
+            return false;
+        }
+        
+        function clearSession() {
+            sessionStorage.removeItem('qr_inspection_user');
+            currentUser = null;
+        }
+        
+        function updateUserDisplay() {
+            if (currentUser) {
+                document.getElementById('display-name').textContent = currentUser.name;
+                document.getElementById('display-name-form').textContent = currentUser.name;
+                document.getElementById('display-name-data').textContent = currentUser.name;
+                document.getElementById('display-position').textContent = currentUser.position;
+                document.getElementById('display-position-form').textContent = currentUser.position;
+                document.getElementById('display-position-data').textContent = currentUser.position;
+            }
+        }
+        
+        // ===== Password Toggle =====
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            const eyeOffIcon = document.getElementById('eye-off-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.style.display = 'none';
+                eyeOffIcon.style.display = 'block';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.style.display = 'block';
+                eyeOffIcon.style.display = 'none';
+            }
+        }
+        
+        // ===== JSONP Helper =====
+        function jsonp(url) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+                const script = document.createElement('script');
+                
+                const timeout = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('Request timeout'));
+                }, 30000);
+                
+                function cleanup() {
+                    clearTimeout(timeout);
+                    delete window[callbackName];
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                }
+                
+                window[callbackName] = (data) => {
+                    cleanup();
+                    resolve(data);
+                };
+                
+                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
+                script.onerror = () => {
+                    cleanup();
+                    reject(new Error('Script load error'));
+                };
+                
+                document.body.appendChild(script);
+            });
+        }
+        
+        // ===== Login =====
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const loginBtn = document.getElementById('login-btn');
+            
+            if (!username || !password) {
+                showAlert('login-alert', 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน', 'error');
+                return;
+            }
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="loading"></span><span>กำลังเข้าสู่ระบบ...</span>';
+            
+            try {
+                const url = `${API_URL}?action=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+                const result = await jsonp(url);
+                
+                if (result.success) {
+                    currentUser = {
+                        username: username,
+                        name: result.name || username,
+                        position: result.position || 'ผู้ตรวจสอบ'
+                    };
+                    
+                    saveSession();
+                    updateUserDisplay();
+                    
+                    if (isDesktopMode) {
+                        showDataPage();
+                    } else {
+                        showPage('scanner-page');
+                        startScanner();
+                    }
+                } else {
+                    showAlert('login-alert', result.message || 'เข้าสู่ระบบไม่สำเร็จ', 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('login-alert', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+            }
+            
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/></svg><span>เข้าสู่ระบบ</span>';
+        });
+        
+        // ===== QR Scanner =====
+        function startScanner() {
+            if (isDesktopMode) return;
+            
+            if (qrScanner) {
+                try { qrScanner.clear(); } catch(e) {}
+            }
+            
+            qrScanner = new Html5Qrcode("qr-reader");
+            
+            qrScanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                onScanSuccess,
+                () => {}
+            ).catch(err => console.error("Scanner error:", err));
+        }
+        
+        function stopScanner() {
+            if (qrScanner) {
+                qrScanner.stop().then(() => {
+                    try { qrScanner.clear(); } catch(e) {}
+                }).catch(() => {});
+            }
+        }
+        
+        function onScanSuccess(decodedText) {
+            stopScanner();
+            getCurrentLocation(); // ดึงพิกัดปัจจุบัน
+            
+            try {
+                try {
+                    const data = JSON.parse(decodedText);
+                    locationData.name = data.name || data.location || decodedText;
+                    locationData.latitude = data.lat || data.latitude || '-';
+                    locationData.longitude = data.lng || data.longitude || '-';
+                } catch {
+                    const parts = decodedText.split('|');
+                    if (parts.length >= 3) {
+                        locationData.name = parts[0];
+                        locationData.latitude = parts[1];
+                        locationData.longitude = parts[2];
+                    } else {
+                        locationData.name = decodedText;
+                        locationData.latitude = '-';
+                        locationData.longitude = '-';
+                    }
+                }
+                
+                document.getElementById('location-name').textContent = locationData.name;
+                document.getElementById('latitude').textContent = locationData.latitude;
+                document.getElementById('longitude').textContent = locationData.longitude;
+                
+                showPage('form-page');
+                
+            } catch (error) {
+                console.error('QR Parse Error:', error);
+                startScanner();
+            }
+        }
+        
+        // ===== Status Selection =====
+        function selectStatus(element, status) {
+            document.querySelectorAll('.status-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedStatus = status;
+        }
+        
+        // ===== Image Upload =====
+        function triggerUpload(index) {
+            document.getElementById('file-input-' + index).click();
+        }
+        
+        function handleImageUpload(input, index) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedImages[index - 1] = e.target.result;
+                
+                const box = document.getElementById(`image-box-${index}`);
+                box.classList.add('has-image');
+                box.innerHTML = `
+                    <input type="file" id="file-input-${index}" accept="image/*" capture="environment" onchange="handleImageUpload(this, ${index})" style="display:none">
+                    <img src="${e.target.result}" alt="รูปภาพ ${index}">
+                    <button type="button" class="remove-btn" onclick="removeImage(event, ${index})">
+                        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </button>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function removeImage(event, index) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            uploadedImages[index - 1] = null;
+            
+            const box = document.getElementById(`image-box-${index}`);
+            box.classList.remove('has-image');
+            box.innerHTML = `
+                <input type="file" id="file-input-${index}" accept="image/*" capture="environment" onchange="handleImageUpload(this, ${index})" style="display:none">
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                <span>รูปที่ ${index}</span>
+            `;
+        }
+        
+        // ===== Form Submit =====
+        document.getElementById('inspection-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!selectedStatus) {
+                showAlert('form-alert', 'กรุณาเลือกสถานะการตรวจสอบ', 'error');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading"></span><span>กำลังบันทึก...</span>';
+            
+            // รวมพิกัดปัจจุบัน
+            const currentLocation = currentLocationData.lat && currentLocationData.lng 
+                ? `${currentLocationData.lat}, ${currentLocationData.lng}` 
+                : '-';
+            
+            const data = {
+                username: currentUser.name,
+                position: currentUser.position,
+                currentLocation: currentLocation,
+                locationName: locationData.name,
+                latitude: locationData.latitude,
+                longitude: locationData.longitude,
+                status: selectedStatus,
+                remark: document.getElementById('remark').value,
+                images: uploadedImages.filter(img => img !== null)
+            };
+            
+            try {
+                await fetch(API_URL + '?action=submit', {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                document.getElementById('success-message').textContent = 'บันทึกข้อมูลเรียบร้อยแล้ว';
+                document.getElementById('success-modal').classList.add('active');
+                resetForm();
+                
+            } catch (error) {
+                console.error('Submit error:', error);
+                showAlert('form-alert', 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm2 16H5V5h11.17L19 7.83V19zm-7-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zM6 6h9v4H6z"/></svg><span>บันทึกข้อมูล</span>';
+        });
+        
+        // ===== Auto Refresh =====
+        function startAutoRefresh() {
+            if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+            autoRefreshTimer = setInterval(() => {
+                if (document.getElementById('data-page').classList.contains('active')) {
+                    console.log('Auto refreshing data...');
+                    loadData();
+                }
+            }, AUTO_REFRESH_INTERVAL);
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+                autoRefreshTimer = null;
+            }
+        }
+        
+        // ===== Load Data =====
+        async function loadData() {
+            const container = document.getElementById('data-container');
+            container.innerHTML = `<div class="no-data"><span class="loading"></span><p style="margin-top: 12px;">กำลังโหลดข้อมูล...</p></div>`;
+            
+            try {
+                const url = `${API_URL}?action=getData`;
+                const result = await jsonp(url);
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    allData = result.data;
+                    document.getElementById('total-records').textContent = `${result.total} รายการ`;
+                    currentPage = 1;
+                    renderTable();
+                } else {
+                    document.getElementById('total-records').textContent = '0 รายการ';
+                    container.innerHTML = `<div class="no-data">ไม่มีข้อมูลการตรวจสอบ</div>`;
+                    document.getElementById('pagination').innerHTML = '';
+                }
+                
+            } catch (error) {
+                console.error('Load data error:', error);
+                container.innerHTML = `<div class="no-data">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>`;
+            }
+        }
+        
+        function renderTable() {
+            const container = document.getElementById('data-container');
+            const totalPages = Math.ceil(allData.length / ITEMS_PER_PAGE);
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const pageData = allData.slice(startIndex, endIndex);
+            
+            let tableHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>วันที่เวลา</th>
+                            <th>ผู้ตรวจ</th>
+                            <th>ตำแหน่ง</th>
+                            <th>พิกัดปัจจุบัน</th>
+                            <th>สถานที่</th>
+                            <th>สถานะ</th>
+                            <th>หมายเหตุ</th>
+                            <th>รูปภาพ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            pageData.forEach(row => {
+                const statusClass = row['สถานะ'] === 'ปกติ' ? 'normal' : 'abnormal';
+                
+                let imageIcons = '';
+                for (let i = 1; i <= 4; i++) {
+                    const imgUrl = row[`รูปภาพ ${i}`];
+                    if (imgUrl && imgUrl !== '') {
+                        imageIcons += `
+                            <a href="${imgUrl}" target="_blank" class="image-icon-btn" title="รูปที่ ${i}">
+                                <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                            </a>
+                        `;
+                    }
+                }
+                
+                tableHTML += `
+                    <tr>
+                        <td><strong>${row['ID'] || '-'}</strong></td>
+                        <td>${row['วันที่เวลา'] || '-'}</td>
+                        <td>${row['ผู้ตรวจ'] || '-'}</td>
+                        <td>${row['ตำแหน่ง'] || '-'}</td>
+                        <td>${row['พิกัดปัจจุบัน'] || '-'}</td>
+                        <td>${row['สถานที่'] || '-'}</td>
+                        <td><span class="status-badge ${statusClass}">${row['สถานะ'] || '-'}</span></td>
+                        <td>${row['หมายเหตุ'] || '-'}</td>
+                        <td><div class="image-icons">${imageIcons || '-'}</div></td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `</tbody></table>`;
+            container.innerHTML = tableHTML;
+            
+            renderPagination(totalPages);
+        }
+        
+        function renderPagination(totalPages) {
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+            
+            let html = `
+                <button class="pagination-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                </button>
+            `;
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    html += `<span class="pagination-info">...</span>`;
+                }
+            }
+            
+            html += `
+                <button class="pagination-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </button>
+            `;
+            
+            pagination.innerHTML = html;
+        }
+        
+        function goToPage(page) {
+            const totalPages = Math.ceil(allData.length / ITEMS_PER_PAGE);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTable();
+            document.getElementById('data-container').scrollTop = 0;
+        }
+        
+        function showDataPage() {
+            stopScanner();
+            showPage('data-page');
+            loadData();
+            startAutoRefresh();
+        }
+        
+        function backToScannerFromData() {
+            if (isDesktopMode) return;
+            stopAutoRefresh();
+            showPage('scanner-page');
+            startScanner();
+        }
+        
+        function resetForm() {
+            document.getElementById('inspection-form').reset();
+            document.getElementById('remark').value = '';
+            uploadedImages = [null, null, null, null];
+            selectedStatus = '';
+            
+            document.querySelectorAll('.status-option').forEach(opt => opt.classList.remove('selected'));
+            
+            for (let i = 1; i <= 4; i++) {
+                const box = document.getElementById(`image-box-${i}`);
+                box.classList.remove('has-image');
+                box.innerHTML = `
+                    <input type="file" id="file-input-${i}" accept="image/*" capture="environment" onchange="handleImageUpload(this, ${i})" style="display:none">
+                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    <span>รูปที่ ${i}</span>
+                `;
+            }
+        }
+        
+        function closeModalAndScan() {
+            document.getElementById('success-modal').classList.remove('active');
+            showPage('scanner-page');
+            startScanner();
+        }
+        
+        function backToScanner() {
+            resetForm();
+            showPage('scanner-page');
+            startScanner();
+        }
+        
+        function logout() {
+            stopScanner();
+            stopAutoRefresh();
+            clearSession();
+            document.getElementById('login-form').reset();
+            showPage('login-page');
+        }
+        
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+        
+        function showAlert(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="alert alert-${type}"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg><span>${message}</span></div>`;
+            setTimeout(() => { container.innerHTML = ''; }, 5000);
+        }
+        
+        // ===== Init =====
+        window.onload = function() {
+            isDesktopMode = !isMobileDevice();
+            
+            if (isDesktopMode) {
+                document.getElementById('main-container').classList.add('desktop-mode');
+                document.getElementById('back-btn-mobile').style.display = 'none';
+                document.getElementById('desktop-info').style.display = 'flex';
+            }
+            
+            if (loadSession()) {
+                if (isDesktopMode) {
+                    showDataPage();
+                } else {
+                    showPage('scanner-page');
+                    startScanner();
+                }
+            }
+        };
+    </script>
+</body>
+</html>
