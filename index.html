@@ -4,15 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0f172a">
-    <meta name="msapplication-navbutton-color" content="#0f172a">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>ระบบตรวจสอบสถานที่</title>
     
-    <link rel="icon" type="image/png" href="https://img.icons8.com/cotton/100/qr-code.png">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/cotton/100/qr-code.png">
+    <link rel="icon" type="image/png" href="https://img.icons8.com/cotton/64/qr-code--v1.png">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/cotton/64/qr-code--v1.png">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     
     <style>
         :root {
@@ -419,12 +422,12 @@
         
         .modal-icon svg { width: 40px; height: 40px; fill: var(--success); }
         .modal-content h2 { font-size: 1.5rem; margin-bottom: 12px; }
-        .modal-content p { color: var(--gray-light); margin-bottom: 28px; }
+        .modal-content p { color: var(--gray-light); margin-bottom: 28px; white-space: pre-line; }
         
-        /* Upload Status */
-        .upload-status {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
+        /* Sync Status */
+        .sync-status {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
             border-radius: 12px;
             padding: 12px 16px;
             margin-bottom: 20px;
@@ -432,14 +435,14 @@
             align-items: center;
             gap: 12px;
             font-size: 0.85rem;
-            color: var(--warning);
+            color: var(--secondary);
         }
         
-        .upload-status.active { display: flex; }
+        .sync-status.active { display: flex; }
         
-        .upload-status svg {
+        .sync-status svg {
             width: 20px; height: 20px;
-            fill: var(--warning);
+            fill: var(--secondary);
             animation: spin 1s linear infinite;
         }
         
@@ -602,7 +605,7 @@
         <div id="login-page" class="page active">
             <div class="header">
                 <div class="logo">
-                    <img src="https://img.icons8.com/cotton/100/qr-code.png" alt="QR Code">
+                    <img src="https://img.icons8.com/cotton/64/qr-code--v1.png" alt="QR Code">
                 </div>
                 <h1>ระบบตรวจสอบสถานที่</h1>
                 <p>QR Code Location Inspection</p>
@@ -651,10 +654,10 @@
                 <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
             </div>
             
-            <!-- Upload Status Indicator -->
-            <div class="upload-status" id="upload-status">
-                <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-                <span>กำลังอัปโหลดรูปภาพเบื้องหลัง...</span>
+            <!-- Sync Status Indicator -->
+            <div class="sync-status" id="sync-status">
+                <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                <span id="sync-text">กำลังซิงค์ข้อมูล...</span>
             </div>
             
             <div class="card">
@@ -834,13 +837,27 @@
     
     <script>
         // ================================
-        // ⚠️ แก้ไข URL นี้เป็น Web App URL ของคุณ
+        // ⚠️ แก้ไขค่าเหล่านี้
         // ================================
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwWBPKlEGqs82XxFiMxV62q3uQI6zjmkw9Kfwl4GDGullVredwJIrCzPUeCNFFZmOzq/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzyzWZ1fQ70DCtqu9Si8FMlmlLuF5XRh-WJMRjmfADzurXWr9qPL5B4e1YDFaU9s5C3/exec';
+        
+        // Firebase Configuration
+       const firebaseConfig = {
+       apiKey: "AIzaSyAmmrTHgywkTkY1sfjYOPVdzHCV_4tcTT0",
+       authDomain: "qr-inspection-app.firebaseapp.com",
+       databaseURL: "https://qr-inspection-app-default-rtdb.asia-southeast1.firebasedatabase.app",
+       projectId: "qr-inspection-app",
+       storageBucket: "qr-inspection-app.firebasestorage.app",
+       messagingSenderId: "596699555304",
+       appId: "1:596699555304:web:474a57f2c9b4b36bff305d"
+       };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
         
         const ITEMS_PER_PAGE = 10;
         const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000;
-        const PENDING_IMAGES_KEY = 'qr_pending_images';
         
         let currentUser = null;
         let qrScanner = null;
@@ -927,81 +944,15 @@
             }
         }
         
-        // ===== Pending Images Storage (localStorage) =====
-        function savePendingImages(id, rowNumber, images) {
-            const pending = getPendingImages();
-            pending.push({
-                id: id,
-                rowNumber: rowNumber,
-                images: images,
-                timestamp: Date.now()
-            });
-            localStorage.setItem(PENDING_IMAGES_KEY, JSON.stringify(pending));
-            console.log('Saved pending images:', id);
+        // ===== Sync Status =====
+        function showSyncStatus(text) {
+            const el = document.getElementById('sync-status');
+            document.getElementById('sync-text').textContent = text;
+            el.classList.add('active');
         }
         
-        function getPendingImages() {
-            try {
-                const saved = localStorage.getItem(PENDING_IMAGES_KEY);
-                return saved ? JSON.parse(saved) : [];
-            } catch(e) {
-                return [];
-            }
-        }
-        
-        function removePendingImages(id) {
-            const pending = getPendingImages().filter(p => p.id !== id);
-            localStorage.setItem(PENDING_IMAGES_KEY, JSON.stringify(pending));
-            console.log('Removed pending images:', id);
-        }
-        
-        function updateUploadStatus() {
-            const pending = getPendingImages();
-            const statusEl = document.getElementById('upload-status');
-            if (pending.length > 0) {
-                statusEl.classList.add('active');
-            } else {
-                statusEl.classList.remove('active');
-            }
-        }
-        
-        // ===== Background Image Upload =====
-        async function uploadPendingImagesBackground() {
-            const pending = getPendingImages();
-            
-            if (pending.length === 0) {
-                updateUploadStatus();
-                return;
-            }
-            
-            console.log('Starting background upload for', pending.length, 'items');
-            updateUploadStatus();
-            
-            for (const item of pending) {
-                try {
-                    console.log('Uploading images for:', item.id);
-                    
-                    await fetch(API_URL + '?action=uploadImages', {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            id: item.id,
-                            rowNumber: item.rowNumber,
-                            images: item.images
-                        })
-                    });
-                    
-                    // ลบออกจาก localStorage หลังอัปโหลดสำเร็จ
-                    removePendingImages(item.id);
-                    console.log('Upload completed for:', item.id);
-                    
-                } catch (error) {
-                    console.error('Error uploading images for', item.id, ':', error);
-                }
-            }
-            
-            updateUploadStatus();
+        function hideSyncStatus() {
+            document.getElementById('sync-status').classList.remove('active');
         }
         
         // ===== JSONP Helper =====
@@ -1071,8 +1022,6 @@
                     } else {
                         showPage('scanner-page');
                         startScanner();
-                        // อัปโหลดรูปภาพที่ค้างอยู่
-                        setTimeout(uploadPendingImagesBackground, 2000);
                     }
                 } else {
                     showAlert('login-alert', result.message || 'เข้าสู่ระบบไม่สำเร็จ', 'error');
@@ -1163,21 +1112,50 @@
             const file = input.files[0];
             if (!file) return;
             
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                uploadedImages[index - 1] = e.target.result;
+            // Resize image before upload
+            resizeImage(file, 800, 0.7).then(resizedDataUrl => {
+                uploadedImages[index - 1] = resizedDataUrl;
                 
                 const box = document.getElementById(`image-box-${index}`);
                 box.classList.add('has-image');
                 box.innerHTML = `
                     <input type="file" id="file-input-${index}" accept="image/*" capture="environment" onchange="handleImageUpload(this, ${index})" style="display:none">
-                    <img src="${e.target.result}" alt="รูปภาพ ${index}">
+                    <img src="${resizedDataUrl}" alt="รูปภาพ ${index}">
                     <button type="button" class="remove-btn" onclick="removeImage(event, ${index})">
                         <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                     </button>
                 `;
-            };
-            reader.readAsDataURL(file);
+            });
+        }
+        
+        // Resize image to reduce size
+        function resizeImage(file, maxWidth, quality) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > maxWidth) {
+                            height = (height * maxWidth) / width;
+                            width = maxWidth;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
         }
         
         function removeImage(event, index) {
@@ -1195,7 +1173,7 @@
             `;
         }
         
-        // ===== Form Submit =====
+        // ===== Form Submit - Save to Firebase =====
         document.getElementById('inspection-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -1212,11 +1190,19 @@
                 ? `${currentLocationData.lat}, ${currentLocationData.lng}` 
                 : '-';
             
-            const imagesToUpload = uploadedImages.filter(img => img !== null);
-            const hasImages = imagesToUpload.length > 0;
+            const now = new Date();
+            const timestamp = now.toLocaleString('th-TH', { 
+                timeZone: 'Asia/Bangkok',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
             
-            // ข้อมูลข้อความ (ไม่รวมรูปภาพ)
-            const textData = {
+            const inspectionData = {
+                timestamp: timestamp,
                 username: currentUser.name,
                 position: currentUser.position,
                 currentLocation: currentLocation,
@@ -1225,44 +1211,26 @@
                 longitude: locationData.longitude,
                 status: selectedStatus,
                 remark: document.getElementById('remark').value,
-                hasImages: hasImages
+                images: uploadedImages.filter(img => img !== null),
+                createdAt: firebase.database.ServerValue.TIMESTAMP
             };
             
             try {
-                // Step 1: บันทึกข้อมูลข้อความก่อน (เร็ว)
-                await fetch(API_URL + '?action=submitText', {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(textData)
-                });
+                // บันทึกลง Firebase Realtime Database
+                await database.ref('pending_inspections').push(inspectionData);
                 
-                // Step 2: ถ้ามีรูปภาพ ให้เก็บไว้ใน localStorage ก่อน
-                if (hasImages) {
-                    const tempId = 'IMG-' + Date.now();
-                    
-                    // บันทึกรูปภาพลง localStorage
-                    savePendingImages(tempId, null, imagesToUpload);
-                    
-                    // แสดง success ทันที
-                    document.getElementById('success-message').textContent = 
-                        'บันทึกข้อมูลเรียบร้อยแล้ว\nกำลังอัปโหลดรูปภาพเบื้องหลัง...';
-                    
-                    // อัปโหลดรูปภาพเบื้องหลัง (ไม่ blocking)
-                    setTimeout(() => {
-                        uploadPendingImagesBackground();
-                    }, 500);
-                    
-                } else {
-                    document.getElementById('success-message').textContent = 'บันทึกข้อมูลเรียบร้อยแล้ว';
-                }
+                console.log('✅ บันทึกลง Firebase สำเร็จ');
                 
+                // แสดง Success
+                document.getElementById('success-message').textContent = 
+                    'บันทึกข้อมูลเรียบร้อยแล้ว\nระบบกำลังซิงค์ไปยัง Google Sheets...';
                 document.getElementById('success-modal').classList.add('active');
+                
                 resetForm();
                 
             } catch (error) {
-                console.error('Submit error:', error);
-                showAlert('form-alert', 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+                console.error('Firebase error:', error);
+                showAlert('form-alert', 'เกิดข้อผิดพลาด: ' + error.message, 'error');
             }
             
             submitBtn.disabled = false;
@@ -1337,16 +1305,11 @@
                 let imageIcons = '';
                 for (let i = 1; i <= 4; i++) {
                     const imgUrl = row[`รูปภาพ ${i}`];
-                    if (imgUrl && imgUrl !== '' && imgUrl !== 'กำลังอัปโหลด...') {
+                    if (imgUrl && imgUrl !== '') {
                         imageIcons += `<a href="${imgUrl}" target="_blank" class="image-icon-btn" title="รูปที่ ${i}">
                             <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
                         </a>`;
                     }
-                }
-                
-                // แสดงสถานะกำลังอัปโหลด
-                if (row['รูปภาพ 1'] === 'กำลังอัปโหลด...') {
-                    imageIcons = '<span style="color: var(--warning); font-size: 0.75rem;">⏳ กำลังอัปโหลด...</span>';
                 }
                 
                 tableHTML += `<tr>
@@ -1480,16 +1443,12 @@
                 document.getElementById('desktop-info').style.display = 'flex';
             }
             
-            updateUploadStatus();
-            
             if (loadSession()) {
                 if (isDesktopMode) {
                     showDataPage();
                 } else {
                     showPage('scanner-page');
                     startScanner();
-                    // อัปโหลดรูปภาพที่ค้างอยู่ (ถ้ามี)
-                    setTimeout(uploadPendingImagesBackground, 2000);
                 }
             }
         };
