@@ -5,21 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ระบบลงเวลาทำงาน | Face Recognition</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
-    <!-- Face API -->
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-    
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         :root {
             --primary: #0F172A;
             --primary-light: #1E293B;
-            --primary-dark: #020617;
             --accent: #10B981;
             --accent-dark: #059669;
             --accent-light: #D1FAE5;
@@ -37,1517 +30,298 @@
             --text: #0F172A;
             --text-secondary: #64748B;
             --text-muted: #94A3B8;
-            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             --gradient-main: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            --shadow-glow: 0 0 40px rgba(16, 185, 129, 0.3);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             --radius: 20px;
             --radius-lg: 28px;
             --radius-sm: 14px;
             --radius-xs: 10px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Kanit', sans-serif;
-            background: var(--surface-2);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Kanit', sans-serif; background: var(--surface-2); color: var(--text); min-height: 100vh; }
         .hidden { display: none !important; }
-        
-        /* ===================== */
-        /* Loading Overlay */
-        /* ===================== */
-        .loading-overlay {
-            position: fixed;
-            inset: 0;
-            background: var(--gradient-main);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            color: white;
-        }
 
-        .loading-overlay.hidden { display: none; }
-
-        .loader-ring {
-            width: 80px;
-            height: 80px;
-            border: 4px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            border-top-color: var(--accent);
-            border-right-color: var(--accent);
-            animation: spin 1s ease-in-out infinite;
-            margin-bottom: 32px;
-            box-shadow: 0 0 30px var(--accent-glow);
-        }
-
+        /* Spinner Animation */
         @keyframes spin { to { transform: rotate(360deg); } }
-        
-        @keyframes pulse { 
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
+        .spinner-icon { animation: spin 1s linear infinite; }
 
-        /* Spinning animation for loader icons */
-        [data-lucide="loader-2"],
-        .lucide-loader-2,
-        svg.lucide-loader-2 {
-            animation: spin 1s linear infinite !important;
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed; inset: 0; background: var(--gradient-main);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; color: white;
         }
-
-        .spinner,
-        .spinning {
-            animation: spin 1s linear infinite !important;
-            display: inline-block;
+        .loader-ring {
+            width: 80px; height: 80px; border: 4px solid rgba(255,255,255,0.1);
+            border-radius: 50%; border-top-color: var(--accent); border-right-color: var(--accent);
+            animation: spin 1s ease-in-out infinite; margin-bottom: 32px;
         }
+        .loading-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 20px; }
+        .progress-container { width: 240px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #34D399); border-radius: 3px; transition: width 0.4s; }
 
-        .btn.loading {
-            pointer-events: none;
-            opacity: 0.8;
-        }
-
-        .btn.loading svg,
-        .btn.loading [data-lucide] {
-            animation: spin 1s linear infinite !important;
-        }
-
-        .action-btn.loading svg,
-        .action-btn.loading [data-lucide] {
-            animation: spin 1s linear infinite !important;
-        }
-
-        .loading-text {
-            font-size: 1.1rem;
-            font-weight: 500;
-            margin-bottom: 20px;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-
-        .progress-container {
-            width: 240px;
-            height: 6px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
-            overflow: hidden;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent), #34D399);
-            border-radius: 3px;
-            transition: width 0.4s ease;
-            box-shadow: 0 0 10px var(--accent-glow);
-        }
-
-        /* ===================== */
-        /* Page Container */
-        /* ===================== */
-        .page {
-            display: none;
-            min-height: 100vh;
-        }
-
+        /* Pages */
+        .page { display: none; min-height: 100vh; }
         .page.active { display: block; }
 
-        /* ===================== */
-        /* ATTENDANCE PAGE */
-        /* ===================== */
+        /* Attendance Page */
         .attendance-page {
             background: linear-gradient(180deg, #0F172A 0%, #1E293B 35%, #F1F5F9 35%);
-            min-height: 100vh;
-            position: relative;
+            min-height: 100vh; position: relative;
         }
-
-        .attendance-page::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 35%;
-            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            pointer-events: none;
-        }
-
-        .att-container {
-            max-width: 440px;
-            margin: 0 auto;
-            padding: 20px;
-            position: relative;
-            z-index: 1;
-        }
+        .att-container { max-width: 440px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
 
         /* Header */
-        .att-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 0 40px;
-        }
-
-        .att-logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: white;
-        }
-
+        .att-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 0 40px; }
+        .att-logo { display: flex; align-items: center; gap: 12px; color: white; }
         .att-logo .icon-wrapper {
-            width: 48px;
-            height: 48px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
+            width: 48px; height: 48px; background: rgba(255,255,255,0.1); border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
         }
-
-        .att-logo [data-lucide] {
-            width: 26px;
-            height: 26px;
-        }
-
-        .att-logo h1 {
-            font-size: 1.3rem;
-            font-weight: 600;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
+        .att-logo [data-lucide] { width: 26px; height: 26px; }
+        .att-logo h1 { font-size: 1.3rem; font-weight: 600; }
 
         .login-btn {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: white;
-            padding: 12px 20px;
-            border-radius: var(--radius-xs);
-            font-family: 'Kanit', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 12px 20px; border-radius: var(--radius-xs);
+            font-family: 'Kanit'; font-size: 0.9rem; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; transition: all 0.3s;
         }
-
-        .login-btn:hover {
-            background: rgba(255,255,255,0.2);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        }
-
-        .login-btn [data-lucide] {
-            width: 18px;
-            height: 18px;
-        }
+        .login-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+        .login-btn [data-lucide] { width: 18px; height: 18px; }
 
         /* Main Card */
-        .main-card {
-            background: var(--surface);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-xl), 0 0 0 1px rgba(0,0,0,0.02);
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
+        .main-card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); overflow: hidden; margin-bottom: 20px; }
 
         /* Time Section */
-        .time-section {
-            padding: 32px 24px;
-            text-align: center;
-            background: linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 100%);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .time-display {
-            font-size: 4rem;
-            font-weight: 700;
-            color: var(--text);
-            line-height: 1;
-            font-variant-numeric: tabular-nums;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            margin-bottom: 8px;
-        }
-
-        .date-display {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            font-weight: 400;
-        }
+        .time-section { padding: 32px 24px; text-align: center; background: linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 100%); border-bottom: 1px solid var(--border); }
+        .time-display { font-size: 4rem; font-weight: 700; line-height: 1; margin-bottom: 8px; }
+        .date-display { font-size: 1rem; color: var(--text-secondary); }
 
         /* Status Cards */
-        .status-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            padding: 20px 24px;
-            background: var(--surface-2);
-        }
-
-        .status-card {
-            padding: 16px;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-        }
-
-        .status-card.location {
-            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
-            color: #92400E;
-        }
-
-        .status-card.location.valid {
-            background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
-            color: #065F46;
-        }
-
-        .status-card.location.invalid {
-            background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
-            color: #991B1B;
-        }
-
-        .status-card.face {
-            background: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%);
-            color: #0369A1;
-        }
-
-        .status-card.face.matched {
-            background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
-            color: #065F46;
-        }
-
-        .status-card [data-lucide] {
-            width: 22px;
-            height: 22px;
-            flex-shrink: 0;
-        }
-
-        .status-card span {
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px 24px; background: var(--surface-2); }
+        .status-card { padding: 16px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 12px; }
+        .status-card.location { background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); color: #92400E; }
+        .status-card.location.valid { background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); color: #065F46; }
+        .status-card.location.invalid { background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); color: #991B1B; }
+        .status-card.face { background: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%); color: #0369A1; }
+        .status-card.face.matched { background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); color: #065F46; }
+        .status-card [data-lucide] { width: 22px; height: 22px; flex-shrink: 0; }
+        .status-card span { font-size: 0.9rem; font-weight: 500; }
 
         /* Shift Selection */
-        .shift-section {
-            padding: 24px;
-        }
-
-        .section-label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .section-label [data-lucide] {
-            width: 18px;
-            height: 18px;
-            color: var(--accent);
-        }
-
-        .shift-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-
+        .shift-section { padding: 24px; }
+        .section-label { font-size: 0.9rem; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .section-label [data-lucide] { width: 18px; height: 18px; color: var(--accent); }
+        .shift-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .shift-btn {
-            padding: 18px 12px;
-            border: 2px solid var(--border);
-            border-radius: var(--radius-sm);
-            background: var(--surface);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            font-family: 'Kanit', sans-serif;
-            box-shadow: var(--shadow-sm);
+            padding: 18px 12px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+            background: var(--surface); cursor: pointer; text-align: center; font-family: 'Kanit'; transition: all 0.3s;
         }
-
-        .shift-btn:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
-
-        .shift-btn.active {
-            border-color: var(--accent);
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-            color: white;
-            box-shadow: 0 4px 15px var(--accent-glow);
-        }
-
-        .shift-btn .name {
-            font-weight: 600;
-            font-size: 0.95rem;
-            margin-bottom: 4px;
-        }
-
-        .shift-btn .time {
-            font-size: 0.75rem;
-            opacity: 0.7;
-        }
+        .shift-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .shift-btn.active { border-color: var(--accent); background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: white; }
+        .shift-btn .name { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+        .shift-btn .time { font-size: 0.75rem; opacity: 0.7; }
 
         /* Camera Section */
-        .camera-section {
-            padding: 0 24px 24px;
-        }
-
-        .camera-wrapper {
-            position: relative;
-            aspect-ratio: 4/3;
-            background: var(--primary);
-            border-radius: var(--radius);
-            overflow: hidden;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .camera-wrapper video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1);
-        }
-
-        .camera-wrapper canvas {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            transform: scaleX(-1);
-        }
-
-        .camera-placeholder {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: rgba(255,255,255,0.7);
-            background: var(--primary);
-        }
-
-        .camera-placeholder [data-lucide] {
-            width: 56px;
-            height: 56px;
-            margin-bottom: 16px;
-            opacity: 0.6;
-        }
-
-        /* Liveness Challenge */
-        .liveness-overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            z-index: 10;
-            backdrop-filter: blur(4px);
-        }
-
-        .liveness-overlay.hidden { display: none; }
-
-        .liveness-icon {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 24px;
-            animation: pulse-glow 2s ease-in-out infinite;
-            border: 3px solid rgba(255,255,255,0.3);
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { 
-                box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
-                border-color: rgba(255,255,255,0.3);
-            }
-            50% { 
-                box-shadow: 0 0 40px rgba(16, 185, 129, 0.6);
-                border-color: var(--accent);
-            }
-        }
-
-        .liveness-icon [data-lucide] {
-            width: 48px;
-            height: 48px;
-        }
-
-        .liveness-icon.left { transform: scaleX(-1); }
-
-        .liveness-text {
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .liveness-hint {
-            font-size: 0.9rem;
-            opacity: 0.7;
-        }
-
-        .liveness-progress {
-            display: flex;
-            gap: 8px;
-            margin-top: 24px;
-        }
-
-        .liveness-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            transition: all 0.3s;
-        }
-
-        .liveness-dot.completed {
-            background: var(--accent);
-            box-shadow: 0 0 10px var(--accent-glow);
-        }
-
-        .liveness-dot.current {
-            background: white;
-            animation: pulse 1s infinite;
-        }
+        .camera-section { padding: 0 24px 24px; }
+        .camera-wrapper { position: relative; aspect-ratio: 4/3; background: var(--primary); border-radius: var(--radius); overflow: hidden; }
+        .camera-wrapper video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .camera-wrapper canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+        .camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); }
+        .camera-placeholder [data-lucide] { width: 56px; height: 56px; margin-bottom: 16px; opacity: 0.6; }
 
         /* Matched Info */
-        .matched-section {
-            padding: 20px 24px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
-        }
+        .matched-section { padding: 20px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 16px; background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%); }
+        .matched-avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 700; }
+        .matched-info { flex: 1; }
+        .matched-info h3 { font-size: 1.15rem; font-weight: 600; }
+        .matched-info p { font-size: 0.85rem; color: var(--text-secondary); }
+        .confidence-badge { text-align: center; padding: 8px 16px; background: var(--accent); border-radius: var(--radius-xs); color: white; }
+        .confidence-badge .value { font-size: 1.3rem; font-weight: 700; }
+        .confidence-badge .label { font-size: 0.65rem; opacity: 0.9; }
 
-        .matched-section.hidden { display: none; }
-
-        .matched-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            box-shadow: 0 4px 15px var(--accent-glow);
-        }
-
-        .matched-info {
-            flex: 1;
-        }
-
-        .matched-info h3 {
-            font-size: 1.15rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .matched-info p {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        .confidence-badge {
-            text-align: center;
-            padding: 8px 16px;
-            background: var(--accent);
-            border-radius: var(--radius-xs);
-            color: white;
-        }
-
-        .confidence-badge .value {
-            font-size: 1.3rem;
-            font-weight: 700;
-        }
-
-        .confidence-badge .label {
-            font-size: 0.65rem;
-            opacity: 0.9;
-        }
-
-        /* Action Buttons */
-        .action-section {
-            padding: 20px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-        }
-
+        /* Action Buttons - FULL WIDTH */
+        .action-section { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 14px; }
         .action-btn {
-            padding: 22px 16px;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-family: 'Kanit', sans-serif;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            color: white;
-            position: relative;
-            overflow: hidden;
+            padding: 24px 16px; border: none; border-radius: var(--radius-sm); font-family: 'Kanit';
+            font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 12px; color: white;
+            width: 100%; position: relative;
         }
+        .action-btn [data-lucide], .action-btn svg { width: 28px; height: 28px; }
+        .action-btn.checkin { background: linear-gradient(135deg, #10B981, #059669); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); }
+        .action-btn.checkout { background: linear-gradient(135deg, #EF4444, #DC2626); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4); }
+        .action-btn:hover:not(:disabled) { transform: translateY(-3px); }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
-        .action-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
-            pointer-events: none;
-        }
-
-        .action-btn [data-lucide] {
-            width: 32px;
-            height: 32px;
-        }
-
-        .action-btn.checkin {
-            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-        }
-
-        .action-btn.checkout {
-            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
-        }
-
-        .action-btn:hover:not(:disabled) {
-            transform: translateY(-3px);
-        }
-
-        .action-btn.checkin:hover:not(:disabled) {
-            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.5);
-        }
-
-        .action-btn.checkout:hover:not(:disabled) {
-            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.5);
-        }
-
-        .action-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-
-        /* ===================== */
-        /* MODALS */
-        /* ===================== */
+        /* Modals */
         .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(8px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-            padding: 20px;
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
+            opacity: 0; visibility: hidden; transition: all 0.3s; padding: 20px;
         }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal { background: var(--surface); border-radius: var(--radius-lg); padding: 36px; max-width: 420px; width: 100%; transform: scale(0.9); transition: all 0.3s; position: relative; }
+        .modal-overlay.active .modal { transform: scale(1); }
+        .modal-close { position: absolute; top: 20px; right: 20px; width: 36px; height: 36px; background: var(--surface-3); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--danger-light); color: var(--danger); }
+        .modal-close [data-lucide] { width: 18px; height: 18px; }
+        .modal-icon { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
+        .modal-icon.success { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); color: var(--accent); }
+        .modal-icon.error { background: linear-gradient(135deg, #FEE2E2, #FECACA); color: var(--danger); }
+        .modal-icon.warning { background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: var(--warning); }
+        .modal-icon.login { background: linear-gradient(135deg, #E2E8F0, #CBD5E1); color: var(--primary); }
+        .modal-icon [data-lucide] { width: 40px; height: 40px; }
+        .modal-title { font-size: 1.4rem; font-weight: 600; text-align: center; margin-bottom: 8px; }
+        .modal-message { text-align: center; color: var(--text-secondary); margin-bottom: 28px; line-height: 1.6; white-space: pre-line; }
 
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
+        /* Forms */
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-weight: 500; margin-bottom: 8px; font-size: 0.9rem; }
+        .form-input { width: 100%; padding: 14px 18px; border: 2px solid var(--border); border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 1rem; transition: all 0.2s; }
+        .form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
 
-        .modal {
-            background: var(--surface);
-            border-radius: var(--radius-lg);
-            padding: 36px;
-            max-width: 420px;
-            width: 100%;
-            transform: scale(0.9) translateY(20px);
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow-xl);
-            position: relative;
-        }
+        .btn { padding: 14px 28px; border: none; border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn [data-lucide], .btn svg { width: 20px; height: 20px; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: white; width: 100%; }
+        .btn-primary:hover { transform: translateY(-2px); }
+        .btn-secondary { background: var(--surface-3); color: var(--text); }
+        .btn-sm { padding: 10px 18px; font-size: 0.9rem; }
 
-        .modal-overlay.active .modal {
-            transform: scale(1) translateY(0);
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 36px;
-            height: 36px;
-            background: var(--surface-3);
-            border: none;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .modal-close:hover {
-            background: var(--danger-light);
-            color: var(--danger);
-        }
-
-        .modal-close [data-lucide] {
-            width: 18px;
-            height: 18px;
-        }
-
-        .modal-icon {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-        }
-
-        .modal-icon.success {
-            background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
-            color: var(--accent);
-        }
-
-        .modal-icon.error {
-            background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
-            color: var(--danger);
-        }
-
-        .modal-icon.warning {
-            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
-            color: var(--warning);
-        }
-
-        .modal-icon.login {
-            background: linear-gradient(135deg, #E2E8F0 0%, #CBD5E1 100%);
-            color: var(--primary);
-        }
-
-        .modal-icon [data-lucide] {
-            width: 40px;
-            height: 40px;
-        }
-
-        .modal-title {
-            font-size: 1.4rem;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 8px;
-        }
-
-        .modal-message {
-            text-align: center;
-            color: var(--text-secondary);
-            margin-bottom: 28px;
-            line-height: 1.6;
-            white-space: pre-line;
-        }
-
-        /* Form Styles */
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 500;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-            color: var(--text);
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 14px 18px;
-            border: 2px solid var(--border);
-            border-radius: var(--radius-xs);
-            font-family: 'Kanit', sans-serif;
-            font-size: 1rem;
-            transition: all 0.2s;
-            background: var(--surface);
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px var(--accent-glow);
-        }
-
-        .form-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .btn {
-            padding: 14px 28px;
-            border: none;
-            border-radius: var(--radius-xs);
-            font-family: 'Kanit', sans-serif;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn [data-lucide] {
-            width: 20px;
-            height: 20px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-            color: white;
-            width: 100%;
-            box-shadow: 0 4px 15px var(--accent-glow);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px var(--accent-glow);
-        }
-
-        .btn-secondary {
-            background: var(--surface-3);
-            color: var(--text);
-        }
-
-        .btn-secondary:hover {
-            background: var(--border);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, var(--danger) 0%, #DC2626 100%);
-            color: white;
-        }
-
-        .btn-sm {
-            padding: 10px 18px;
-            font-size: 0.9rem;
-        }
-
-        /* ===================== */
-        /* ADMIN PAGE */
-        /* ===================== */
-        .admin-page {
-            background: var(--surface-2);
-        }
-
-        .admin-header {
-            background: var(--gradient-main);
-            color: white;
-            padding: 20px 24px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .admin-header-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .admin-title {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .admin-title [data-lucide] {
-            width: 28px;
-            height: 28px;
-        }
-
-        .admin-title h1 {
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-
-        .admin-nav {
-            display: flex;
-            gap: 10px;
-        }
-
-        .nav-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: white;
-            padding: 10px 18px;
-            border-radius: var(--radius-xs);
-            font-family: 'Kanit', sans-serif;
-            font-size: 0.9rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s;
-        }
-
-        .nav-btn:hover {
-            background: rgba(255,255,255,0.2);
-            transform: translateY(-2px);
-        }
-
-        .nav-btn [data-lucide] {
-            width: 18px;
-            height: 18px;
-        }
-
-        .admin-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px;
-        }
+        /* Admin Page */
+        .admin-page { background: var(--surface-2); }
+        .admin-header { background: var(--gradient-main); color: white; padding: 20px 24px; position: sticky; top: 0; z-index: 100; }
+        .admin-header-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .admin-title { display: flex; align-items: center; gap: 12px; }
+        .admin-title [data-lucide] { width: 28px; height: 28px; }
+        .admin-title h1 { font-size: 1.2rem; font-weight: 600; }
+        .admin-nav { display: flex; gap: 10px; }
+        .nav-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 10px 18px; border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s; }
+        .nav-btn:hover { background: rgba(255,255,255,0.2); }
+        .nav-btn [data-lucide] { width: 18px; height: 18px; }
+        .admin-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
 
         /* Tabs */
-        .tabs-container {
-            background: var(--surface);
-            border-radius: var(--radius);
-            padding: 8px;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow);
-            display: flex;
-            gap: 6px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 14px 20px;
-            border: none;
-            background: transparent;
-            border-radius: var(--radius-sm);
-            font-family: 'Kanit', sans-serif;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .tab-btn:hover {
-            color: var(--text);
-            background: var(--surface-2);
-        }
-
-        .tab-btn.active {
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-            color: white;
-            box-shadow: 0 4px 15px var(--accent-glow);
-        }
-
-        .tab-btn [data-lucide] {
-            width: 20px;
-            height: 20px;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
+        .tabs-container { background: var(--surface); border-radius: var(--radius); padding: 8px; margin-bottom: 24px; display: flex; gap: 6px; }
+        .tab-btn { flex: 1; padding: 14px 20px; border: none; background: transparent; border-radius: var(--radius-sm); font-family: 'Kanit'; font-size: 0.95rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .tab-btn:hover { color: var(--text); background: var(--surface-2); }
+        .tab-btn.active { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: white; }
+        .tab-btn [data-lucide] { width: 20px; height: 20px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
         /* Cards */
-        .card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .card-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card-header h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card-header [data-lucide] {
-            width: 22px;
-            height: 22px;
-            color: var(--accent);
-        }
-
-        .card-body {
-            padding: 24px;
-        }
+        .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+        .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .card-header h2 { font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .card-header [data-lucide] { width: 22px; height: 22px; color: var(--accent); }
+        .card-body { padding: 24px; }
 
         /* Employee Grid */
-        .employee-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 16px;
-        }
-
-        .employee-card {
-            display: flex;
-            align-items: center;
-            padding: 18px;
-            background: var(--surface-2);
-            border-radius: var(--radius-sm);
-            gap: 16px;
-            transition: all 0.3s;
-            border: 1px solid transparent;
-        }
-
-        .employee-card:hover {
-            background: var(--surface-3);
-            border-color: var(--border);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
-
-        .emp-avatar {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            box-shadow: 0 4px 10px var(--accent-glow);
-        }
-
-        .emp-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .emp-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 500;
-            margin-bottom: 6px;
-        }
-
-        .emp-badge.registered {
-            background: var(--accent-light);
-            color: #065F46;
-        }
-
-        .emp-badge.not-registered {
-            background: var(--warning-light);
-            color: #92400E;
-        }
-
-        .emp-badge [data-lucide] {
-            width: 12px;
-            height: 12px;
-        }
-
-        .emp-info h4 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .emp-info p {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        .emp-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .icon-btn {
-            width: 40px;
-            height: 40px;
-            border: none;
-            border-radius: var(--radius-xs);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .icon-btn [data-lucide] {
-            width: 20px;
-            height: 20px;
-        }
-
-        .icon-btn.primary {
-            background: var(--accent-light);
-            color: var(--accent);
-        }
-
-        .icon-btn.primary:hover {
-            background: var(--accent);
-            color: white;
-            box-shadow: 0 4px 12px var(--accent-glow);
-        }
-
-        .icon-btn.danger {
-            background: var(--danger-light);
-            color: var(--danger);
-        }
-
-        .icon-btn.danger:hover {
-            background: var(--danger);
-            color: white;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-        }
-
-        /* Form Row */
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        @media (max-width: 600px) {
-            .form-row { grid-template-columns: 1fr; }
-        }
+        .employee-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+        .employee-card { display: flex; align-items: center; padding: 18px; background: var(--surface-2); border-radius: var(--radius-sm); gap: 16px; transition: all 0.3s; }
+        .employee-card:hover { background: var(--surface-3); transform: translateY(-2px); }
+        .emp-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem; flex-shrink: 0; }
+        .emp-info { flex: 1; min-width: 0; }
+        .emp-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 500; margin-bottom: 6px; }
+        .emp-badge.registered { background: var(--accent-light); color: #065F46; }
+        .emp-badge.not-registered { background: var(--warning-light); color: #92400E; }
+        .emp-badge [data-lucide] { width: 12px; height: 12px; }
+        .emp-info h4 { font-size: 1rem; font-weight: 600; margin-bottom: 2px; }
+        .emp-info p { font-size: 0.8rem; color: var(--text-secondary); }
+        .emp-actions { display: flex; gap: 8px; }
+        .icon-btn { width: 40px; height: 40px; border: none; border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; }
+        .icon-btn [data-lucide] { width: 20px; height: 20px; }
+        .icon-btn.primary { background: var(--accent-light); color: var(--accent); }
+        .icon-btn.primary:hover { background: var(--accent); color: white; }
+        .icon-btn.danger { background: var(--danger-light); color: var(--danger); }
+        .icon-btn.danger:hover { background: var(--danger); color: white; }
 
         /* Face Registration */
-        .face-reg-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 28px;
-        }
-
-        @media (max-width: 800px) {
-            .face-reg-grid { grid-template-columns: 1fr; }
-        }
-
-        .camera-preview {
-            aspect-ratio: 4/3;
-            background: var(--primary);
-            border-radius: var(--radius-sm);
-            overflow: hidden;
-            position: relative;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .camera-preview video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1);
-        }
-
-        .camera-preview canvas {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            transform: scaleX(-1);
-        }
-
-        .face-status {
-            padding: 14px;
-            border-radius: var(--radius-xs);
-            text-align: center;
-            font-weight: 500;
-            margin: 16px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .face-status [data-lucide] {
-            width: 20px;
-            height: 20px;
-        }
-
-        .face-status.detecting {
-            background: var(--warning-light);
-            color: #92400E;
-        }
-
-        .face-status.detected {
-            background: var(--accent-light);
-            color: #065F46;
-        }
-
-        .instructions {
-            background: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%);
-            border-radius: var(--radius-sm);
-            padding: 20px;
-            margin-bottom: 24px;
-        }
-
-        .instructions h4 {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #0369A1;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .instructions [data-lucide] {
-            width: 20px;
-            height: 20px;
-        }
-
-        .instructions ul {
-            list-style: none;
-            font-size: 0.85rem;
-            color: #0369A1;
-        }
-
-        .instructions li {
-            padding: 5px 0 5px 28px;
-            position: relative;
-        }
-
-        .instructions li::before {
-            content: '✓';
-            position: absolute;
-            left: 0;
-            color: var(--accent);
-            font-weight: bold;
-        }
-
-        .selected-emp {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 18px;
-            background: var(--surface-2);
-            border-radius: var(--radius-sm);
-            margin-bottom: 16px;
-        }
-
-        .selected-emp .avatar {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
-
-        .selected-emp .info h4 {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .selected-emp .info p {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
+        .face-reg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+        @media (max-width: 800px) { .face-reg-grid { grid-template-columns: 1fr; } }
+        .camera-preview { aspect-ratio: 4/3; background: var(--primary); border-radius: var(--radius-sm); overflow: hidden; position: relative; }
+        .camera-preview video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .camera-preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+        .face-status { padding: 14px; border-radius: var(--radius-xs); text-align: center; font-weight: 500; margin: 16px 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .face-status [data-lucide] { width: 20px; height: 20px; }
+        .face-status.detecting { background: var(--warning-light); color: #92400E; }
+        .face-status.detected { background: var(--accent-light); color: #065F46; }
+        .instructions { background: linear-gradient(135deg, #E0F2FE, #BAE6FD); border-radius: var(--radius-sm); padding: 20px; margin-bottom: 24px; }
+        .instructions h4 { font-size: 0.95rem; font-weight: 600; color: #0369A1; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .instructions [data-lucide] { width: 20px; height: 20px; }
+        .instructions ul { list-style: none; font-size: 0.85rem; color: #0369A1; }
+        .instructions li { padding: 5px 0 5px 28px; position: relative; }
+        .instructions li::before { content: '✓'; position: absolute; left: 0; color: var(--accent); font-weight: bold; }
+        .selected-emp { display: flex; align-items: center; gap: 14px; padding: 18px; background: var(--surface-2); border-radius: var(--radius-sm); margin-bottom: 16px; }
+        .selected-emp .avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem; }
+        .selected-emp .info h4 { font-size: 1rem; font-weight: 600; }
+        .selected-emp .info p { font-size: 0.85rem; color: var(--text-secondary); }
 
         /* Search */
-        .search-box {
-            position: relative;
-            margin-bottom: 20px;
-        }
+        .search-box { position: relative; margin-bottom: 20px; }
+        .search-box input { width: 100%; max-width: 360px; padding: 14px 18px 14px 48px; border: 2px solid var(--border); border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.95rem; }
+        .search-box input:focus { outline: none; border-color: var(--accent); }
+        .search-box [data-lucide] { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--text-muted); }
 
-        .search-box input {
-            width: 100%;
-            max-width: 360px;
-            padding: 14px 18px 14px 48px;
-            border: 2px solid var(--border);
-            border-radius: var(--radius-xs);
-            font-family: 'Kanit', sans-serif;
-            font-size: 0.95rem;
-            transition: all 0.2s;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px var(--accent-glow);
-        }
-
-        .search-box [data-lucide] {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
-            color: var(--text-muted);
-        }
-
-        /* ===================== */
-        /* DASHBOARD PAGE */
-        /* ===================== */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 18px;
-            margin-bottom: 28px;
-        }
-
-        .stat-card {
-            background: var(--surface);
-            border-radius: var(--radius-sm);
-            padding: 24px;
-            box-shadow: var(--shadow);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-        }
-
+        /* Dashboard Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 28px; }
+        .stat-card { background: var(--surface); border-radius: var(--radius-sm); padding: 24px; box-shadow: var(--shadow); position: relative; overflow: hidden; transition: all 0.3s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
         .stat-card.primary::before { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
         .stat-card.success::before { background: linear-gradient(90deg, var(--accent), #34D399); }
         .stat-card.danger::before { background: linear-gradient(90deg, var(--danger), #F87171); }
         .stat-card.warning::before { background: linear-gradient(90deg, var(--warning), #FBBF24); }
         .stat-card.info::before { background: linear-gradient(90deg, var(--info), #38BDF8); }
-
-        .stat-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: var(--radius-xs);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 16px;
-        }
-
+        .stat-icon { width: 52px; height: 52px; border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
         .stat-card.primary .stat-icon { background: #E2E8F0; color: var(--primary); }
         .stat-card.success .stat-icon { background: var(--accent-light); color: var(--accent); }
         .stat-card.danger .stat-icon { background: var(--danger-light); color: var(--danger); }
         .stat-card.warning .stat-icon { background: var(--warning-light); color: var(--warning); }
         .stat-card.info .stat-icon { background: var(--info-light); color: var(--info); }
+        .stat-icon [data-lucide] { width: 26px; height: 26px; }
+        .stat-value { font-size: 2.5rem; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+        .stat-label { font-size: 0.9rem; color: var(--text-secondary); }
 
-        .stat-icon [data-lucide] {
-            width: 26px;
-            height: 26px;
-        }
-
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--text);
-            line-height: 1;
-            margin-bottom: 6px;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        /* Charts Grid */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        @media (max-width: 500px) {
-            .charts-grid { grid-template-columns: 1fr; }
-        }
-
-        .chart-container {
-            position: relative;
-            height: 300px;
-        }
+        /* Charts */
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-bottom: 24px; }
+        @media (max-width: 500px) { .charts-grid { grid-template-columns: 1fr; } }
+        .chart-container { position: relative; height: 300px; }
 
         /* Table */
-        .table-container {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 16px 18px;
-            text-align: left;
-        }
-
-        th {
-            background: var(--surface-2);
-            font-weight: 500;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            border-bottom: 2px solid var(--border);
-        }
-
-        td {
-            border-bottom: 1px solid var(--border);
-            font-size: 0.9rem;
-        }
-
-        tr:hover td {
-            background: var(--surface-2);
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .status-badge.normal {
-            background: var(--accent-light);
-            color: #065F46;
-        }
-
-        .status-badge.late {
-            background: var(--danger-light);
-            color: #991B1B;
-        }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 16px 18px; text-align: left; }
+        th { background: var(--surface-2); font-weight: 500; font-size: 0.85rem; color: var(--text-secondary); border-bottom: 2px solid var(--border); }
+        td { border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        tr:hover td { background: var(--surface-2); }
+        .status-badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; }
+        .status-badge.normal { background: var(--accent-light); color: #065F46; }
+        .status-badge.late { background: var(--danger-light); color: #991B1B; }
 
         /* Date Filter */
-        .date-filter {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            flex-wrap: wrap;
-        }
-
-        .date-filter input[type="date"] {
-            padding: 12px 16px;
-            border: 2px solid var(--border);
-            border-radius: var(--radius-xs);
-            font-family: 'Kanit', sans-serif;
-            font-size: 0.9rem;
-        }
+        .date-filter { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .date-filter input[type="date"] { padding: 12px 16px; border: 2px solid var(--border); border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.9rem; }
 
         /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 24px;
-            color: var(--text-secondary);
-        }
-
-        .empty-state [data-lucide] {
-            width: 56px;
-            height: 56px;
-            margin-bottom: 20px;
-            opacity: 0.4;
-        }
+        .empty-state { text-align: center; padding: 60px 24px; color: var(--text-secondary); }
+        .empty-state [data-lucide] { width: 56px; height: 56px; margin-bottom: 20px; opacity: 0.4; }
 
         /* Responsive */
         @media (max-width: 600px) {
-            .admin-header-inner {
-                flex-direction: column;
-                gap: 16px;
-            }
-            
-            .tabs-container {
-                flex-wrap: wrap;
-            }
-            
-            .tab-btn {
-                flex: 1 1 45%;
-            }
-            
-            .shift-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .att-header {
-                flex-direction: column;
-                gap: 16px;
-                align-items: flex-start;
-            }
-            
-            .login-btn {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-in {
-            animation: fadeIn 0.4s ease;
+            .admin-header-inner { flex-direction: column; gap: 16px; }
+            .tabs-container { flex-wrap: wrap; }
+            .tab-btn { flex: 1 1 45%; }
+            .shift-grid { grid-template-columns: 1fr; }
+            .att-header { flex-direction: column; gap: 16px; align-items: flex-start; }
+            .login-btn { width: 100%; justify-content: center; }
         }
     </style>
 </head>
@@ -1561,35 +335,28 @@
         </div>
     </div>
 
-    <!-- ==================== -->
     <!-- ATTENDANCE PAGE -->
-    <!-- ==================== -->
     <div class="page attendance-page active" id="pageAttendance">
         <div class="att-container">
             <header class="att-header">
                 <div class="att-logo">
-                    <div class="icon-wrapper">
-                        <i data-lucide="scan-face"></i>
-                    </div>
+                    <div class="icon-wrapper"><i data-lucide="scan-face"></i></div>
                     <h1>ลงเวลาทำงาน</h1>
                 </div>
                 <button class="login-btn" onclick="showLoginModal()">
-                    <i data-lucide="shield"></i>
-                    <span>Admin</span>
+                    <i data-lucide="shield"></i><span>Admin</span>
                 </button>
             </header>
 
-            <div class="main-card animate-in">
-                <!-- Time Display -->
+            <div class="main-card">
                 <div class="time-section">
                     <div class="time-display" id="currentTime">00:00:00</div>
                     <div class="date-display" id="currentDate">วันจันทร์ที่ 1 มกราคม 2568</div>
                 </div>
 
-                <!-- Status Cards -->
                 <div class="status-grid">
                     <div class="status-card location" id="locationStatus">
-                        <i data-lucide="loader-2"></i>
+                        <i data-lucide="map-pin"></i>
                         <span>ตรวจสอบตำแหน่ง...</span>
                     </div>
                     <div class="status-card face" id="faceStatus">
@@ -1598,11 +365,9 @@
                     </div>
                 </div>
 
-                <!-- Shift Selection -->
                 <div class="shift-section">
                     <div class="section-label">
-                        <i data-lucide="clock"></i>
-                        <span>เลือกผลัดการทำงาน</span>
+                        <i data-lucide="clock"></i><span>เลือกผลัดการทำงาน</span>
                     </div>
                     <div class="shift-grid">
                         <button class="shift-btn" data-shift="morning">
@@ -1620,7 +385,6 @@
                     </div>
                 </div>
 
-                <!-- Camera -->
                 <div class="camera-section">
                     <div class="camera-wrapper">
                         <video id="video" autoplay playsinline muted></video>
@@ -1629,24 +393,9 @@
                             <i data-lucide="camera"></i>
                             <p>กำลังเปิดกล้อง...</p>
                         </div>
-                        
-                        <!-- Liveness Challenge Overlay -->
-                        <div class="liveness-overlay hidden" id="livenessOverlay">
-                            <div class="liveness-icon" id="livenessIcon">
-                                <i data-lucide="smile"></i>
-                            </div>
-                            <div class="liveness-text" id="livenessText">กรุณายิ้ม</div>
-                            <div class="liveness-hint" id="livenessHint">ค้างไว้ 2 วินาที</div>
-                            <div class="liveness-progress">
-                                <div class="liveness-dot" id="dot1"></div>
-                                <div class="liveness-dot" id="dot2"></div>
-                                <div class="liveness-dot" id="dot3"></div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <!-- Matched Employee Info -->
                 <div class="matched-section hidden" id="matchedSection">
                     <div class="matched-avatar" id="matchedAvatar">-</div>
                     <div class="matched-info">
@@ -1660,84 +409,58 @@
                 </div>
             </div>
 
-            <!-- Action Buttons -->
+            <!-- Action Buttons - Full Width -->
             <div class="action-section">
                 <button class="action-btn checkin" id="btnCheckIn" disabled>
-                    <i data-lucide="log-in"></i>
-                    <span>เข้างาน</span>
+                    <i data-lucide="log-in"></i><span>เข้างาน</span>
                 </button>
                 <button class="action-btn checkout" id="btnCheckOut" disabled>
-                    <i data-lucide="log-out"></i>
-                    <span>ออกงาน</span>
+                    <i data-lucide="log-out"></i><span>ออกงาน</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ==================== -->
     <!-- ADMIN PAGE -->
-    <!-- ==================== -->
     <div class="page admin-page" id="pageAdmin">
         <header class="admin-header">
             <div class="admin-header-inner">
                 <div class="admin-title">
-                    <i data-lucide="settings-2"></i>
-                    <h1>ระบบจัดการ</h1>
+                    <i data-lucide="settings-2"></i><h1>ระบบจัดการ</h1>
                 </div>
                 <nav class="admin-nav">
-                    <button class="nav-btn" onclick="showPage('pageAttendance')">
-                        <i data-lucide="clock"></i> ลงเวลา
-                    </button>
-                    <button class="nav-btn" onclick="showPage('pageDashboard')">
-                        <i data-lucide="bar-chart-3"></i> Dashboard
-                    </button>
-                    <button class="nav-btn" onclick="logout()">
-                        <i data-lucide="log-out"></i> ออก
-                    </button>
+                    <button class="nav-btn" onclick="showPage('pageAttendance')"><i data-lucide="clock"></i> ลงเวลา</button>
+                    <button class="nav-btn" onclick="showPage('pageDashboard')"><i data-lucide="bar-chart-3"></i> Dashboard</button>
+                    <button class="nav-btn" onclick="logout()"><i data-lucide="log-out"></i> ออก</button>
                 </nav>
             </div>
         </header>
 
         <div class="admin-container">
             <div class="tabs-container">
-                <button class="tab-btn active" data-tab="employees">
-                    <i data-lucide="users"></i> รายชื่อพนักงาน
-                </button>
-                <button class="tab-btn" data-tab="add-employee">
-                    <i data-lucide="user-plus"></i> เพิ่มพนักงาน
-                </button>
-                <button class="tab-btn" data-tab="register-face">
-                    <i data-lucide="scan-face"></i> ลงทะเบียนใบหน้า
-                </button>
+                <button class="tab-btn active" data-tab="employees"><i data-lucide="users"></i> รายชื่อพนักงาน</button>
+                <button class="tab-btn" data-tab="add-employee"><i data-lucide="user-plus"></i> เพิ่มพนักงาน</button>
+                <button class="tab-btn" data-tab="register-face"><i data-lucide="scan-face"></i> ลงทะเบียนใบหน้า</button>
             </div>
 
-            <!-- Tab: Employees -->
             <div class="tab-content active" id="tab-employees">
                 <div class="card">
-                    <div class="card-header">
-                        <h2><i data-lucide="users"></i> รายชื่อพนักงานทั้งหมด</h2>
-                    </div>
+                    <div class="card-header"><h2><i data-lucide="users"></i> รายชื่อพนักงานทั้งหมด</h2></div>
                     <div class="card-body">
                         <div class="search-box">
                             <i data-lucide="search"></i>
                             <input type="text" id="searchEmployee" placeholder="ค้นหาพนักงาน..." onkeyup="filterEmployees()">
                         </div>
                         <div class="employee-grid" id="employeeList">
-                            <div class="empty-state">
-                                <i data-lucide="loader-2"></i>
-                                <p>กำลังโหลดข้อมูล...</p>
-                            </div>
+                            <div class="empty-state"><i data-lucide="users"></i><p>กำลังโหลดข้อมูล...</p></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Tab: Add Employee -->
             <div class="tab-content" id="tab-add-employee">
                 <div class="card">
-                    <div class="card-header">
-                        <h2><i data-lucide="user-plus"></i> เพิ่มพนักงานใหม่</h2>
-                    </div>
+                    <div class="card-header"><h2><i data-lucide="user-plus"></i> เพิ่มพนักงานใหม่</h2></div>
                     <div class="card-body">
                         <form id="addEmployeeForm">
                             <div class="form-row">
@@ -1768,12 +491,9 @@
                 </div>
             </div>
 
-            <!-- Tab: Register Face -->
             <div class="tab-content" id="tab-register-face">
                 <div class="card">
-                    <div class="card-header">
-                        <h2><i data-lucide="scan-face"></i> ลงทะเบียนใบหน้า</h2>
-                    </div>
+                    <div class="card-header"><h2><i data-lucide="scan-face"></i> ลงทะเบียนใบหน้า</h2></div>
                     <div class="card-body">
                         <div class="instructions">
                             <h4><i data-lucide="info"></i> วิธีลงทะเบียนใบหน้า</h4>
@@ -1784,35 +504,25 @@
                                 <li>กดปุ่ม "บันทึกใบหน้า"</li>
                             </ul>
                         </div>
-
                         <div class="face-reg-grid">
                             <div>
-                                <div class="section-label">
-                                    <i data-lucide="camera"></i>
-                                    <span>กล้อง</span>
-                                </div>
+                                <div class="section-label"><i data-lucide="camera"></i><span>กล้อง</span></div>
                                 <div class="camera-preview">
                                     <video id="regVideo" autoplay playsinline muted></video>
                                     <canvas id="regCanvas"></canvas>
                                     <div class="camera-placeholder" id="regPlaceholder">
-                                        <i data-lucide="camera"></i>
-                                        <p>กรุณาเลือกพนักงาน</p>
+                                        <i data-lucide="camera"></i><p>กรุณาเลือกพนักงาน</p>
                                     </div>
                                 </div>
                                 <div class="face-status detecting" id="regFaceStatus">
-                                    <i data-lucide="scan-face"></i>
-                                    <span>รอตรวจจับใบหน้า...</span>
+                                    <i data-lucide="scan-face"></i><span>รอตรวจจับใบหน้า...</span>
                                 </div>
                                 <button class="btn btn-primary" id="btnSaveFace" disabled style="width: 100%;">
                                     <i data-lucide="save"></i> บันทึกใบหน้า
                                 </button>
                             </div>
-
                             <div>
-                                <div class="section-label">
-                                    <i data-lucide="user"></i>
-                                    <span>เลือกพนักงาน</span>
-                                </div>
+                                <div class="section-label"><i data-lucide="user"></i><span>เลือกพนักงาน</span></div>
                                 <div class="form-group">
                                     <select class="form-input" id="regEmployeeSelect">
                                         <option value="">-- เลือกพนักงาน --</option>
@@ -1837,26 +547,15 @@
         </div>
     </div>
 
-    <!-- ==================== -->
     <!-- DASHBOARD PAGE -->
-    <!-- ==================== -->
     <div class="page admin-page" id="pageDashboard">
         <header class="admin-header">
             <div class="admin-header-inner">
-                <div class="admin-title">
-                    <i data-lucide="bar-chart-3"></i>
-                    <h1>Dashboard</h1>
-                </div>
+                <div class="admin-title"><i data-lucide="bar-chart-3"></i><h1>Dashboard</h1></div>
                 <nav class="admin-nav">
-                    <button class="nav-btn" onclick="showPage('pageAttendance')">
-                        <i data-lucide="clock"></i> ลงเวลา
-                    </button>
-                    <button class="nav-btn" onclick="showPage('pageAdmin')">
-                        <i data-lucide="settings-2"></i> จัดการ
-                    </button>
-                    <button class="nav-btn" onclick="logout()">
-                        <i data-lucide="log-out"></i> ออก
-                    </button>
+                    <button class="nav-btn" onclick="showPage('pageAttendance')"><i data-lucide="clock"></i> ลงเวลา</button>
+                    <button class="nav-btn" onclick="showPage('pageAdmin')"><i data-lucide="settings-2"></i> จัดการ</button>
+                    <button class="nav-btn" onclick="logout()"><i data-lucide="log-out"></i> ออก</button>
                 </nav>
             </div>
         </header>
@@ -1867,107 +566,48 @@
                     <div class="date-filter">
                         <label style="font-weight: 500;">เลือกวันที่:</label>
                         <input type="date" id="dashboardDate">
-                        <button class="btn btn-primary btn-sm" onclick="loadDashboard()">
-                            <i data-lucide="search"></i> ดูข้อมูล
-                        </button>
-                        <button class="btn btn-secondary btn-sm" onclick="setToday()">
-                            <i data-lucide="calendar"></i> วันนี้
-                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="loadDashboard()"><i data-lucide="search"></i> ดูข้อมูล</button>
+                        <button class="btn btn-secondary btn-sm" onclick="setToday()"><i data-lucide="calendar"></i> วันนี้</button>
                     </div>
                 </div>
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card primary">
-                    <div class="stat-icon"><i data-lucide="users"></i></div>
-                    <div class="stat-value" id="statTotal">-</div>
-                    <div class="stat-label">พนักงานทั้งหมด</div>
-                </div>
-                <div class="stat-card success">
-                    <div class="stat-icon"><i data-lucide="log-in"></i></div>
-                    <div class="stat-value" id="statCheckins">-</div>
-                    <div class="stat-label">เข้างานแล้ว</div>
-                </div>
-                <div class="stat-card info">
-                    <div class="stat-icon"><i data-lucide="log-out"></i></div>
-                    <div class="stat-value" id="statCheckouts">-</div>
-                    <div class="stat-label">ออกงานแล้ว</div>
-                </div>
-                <div class="stat-card danger">
-                    <div class="stat-icon"><i data-lucide="alarm-clock"></i></div>
-                    <div class="stat-value" id="statLate">-</div>
-                    <div class="stat-label">มาสาย</div>
-                </div>
-                <div class="stat-card warning">
-                    <div class="stat-icon"><i data-lucide="timer"></i></div>
-                    <div class="stat-value" id="statLateMinutes">-</div>
-                    <div class="stat-label">รวมนาทีสาย</div>
-                </div>
+                <div class="stat-card primary"><div class="stat-icon"><i data-lucide="users"></i></div><div class="stat-value" id="statTotal">-</div><div class="stat-label">พนักงานทั้งหมด</div></div>
+                <div class="stat-card success"><div class="stat-icon"><i data-lucide="log-in"></i></div><div class="stat-value" id="statCheckins">-</div><div class="stat-label">เข้างานแล้ว</div></div>
+                <div class="stat-card info"><div class="stat-icon"><i data-lucide="log-out"></i></div><div class="stat-value" id="statCheckouts">-</div><div class="stat-label">ออกงานแล้ว</div></div>
+                <div class="stat-card danger"><div class="stat-icon"><i data-lucide="alarm-clock"></i></div><div class="stat-value" id="statLate">-</div><div class="stat-label">มาสาย</div></div>
+                <div class="stat-card warning"><div class="stat-icon"><i data-lucide="timer"></i></div><div class="stat-value" id="statLateMinutes">-</div><div class="stat-label">รวมนาทีสาย</div></div>
             </div>
 
             <div class="charts-grid">
                 <div class="card">
-                    <div class="card-header">
-                        <h2><i data-lucide="pie-chart"></i> สถิติตามผลัด</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="shiftChart"></canvas>
-                        </div>
-                    </div>
+                    <div class="card-header"><h2><i data-lucide="pie-chart"></i> สถิติตามผลัด</h2></div>
+                    <div class="card-body"><div class="chart-container"><canvas id="shiftChart"></canvas></div></div>
                 </div>
                 <div class="card">
-                    <div class="card-header">
-                        <h2><i data-lucide="bar-chart-2"></i> สถานะการเข้างาน</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="statusChart"></canvas>
-                        </div>
-                    </div>
+                    <div class="card-header"><h2><i data-lucide="bar-chart-2"></i> สถานะการเข้างาน</h2></div>
+                    <div class="card-body"><div class="chart-container"><canvas id="statusChart"></canvas></div></div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-header">
-                    <h2><i data-lucide="list"></i> รายละเอียดการลงเวลา</h2>
-                </div>
+                <div class="card-header"><h2><i data-lucide="list"></i> รายละเอียดการลงเวลา</h2></div>
                 <div class="table-container">
                     <table>
-                        <thead>
-                            <tr>
-                                <th>พนักงาน</th>
-                                <th>ผลัด</th>
-                                <th>เข้างาน</th>
-                                <th>ออกงาน</th>
-                                <th>สถานะ</th>
-                                <th>สายกี่นาที</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dashboardTable">
-                            <tr>
-                                <td colspan="6" class="empty-state">
-                                    <p>เลือกวันที่เพื่อดูข้อมูล</p>
-                                </td>
-                            </tr>
-                        </tbody>
+                        <thead><tr><th>พนักงาน</th><th>ผลัด</th><th>เข้างาน</th><th>ออกงาน</th><th>สถานะ</th><th>สายกี่นาที</th></tr></thead>
+                        <tbody id="dashboardTable"><tr><td colspan="6" class="empty-state"><p>เลือกวันที่เพื่อดูข้อมูล</p></td></tr></tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ==================== -->
     <!-- LOGIN MODAL -->
-    <!-- ==================== -->
     <div class="modal-overlay" id="loginModal">
         <div class="modal">
-            <button class="modal-close" onclick="closeLoginModal()">
-                <i data-lucide="x"></i>
-            </button>
-            <div class="modal-icon login">
-                <i data-lucide="shield"></i>
-            </div>
+            <button class="modal-close" onclick="closeLoginModal()"><i data-lucide="x"></i></button>
+            <div class="modal-icon login"><i data-lucide="shield"></i></div>
             <h3 class="modal-title">เข้าสู่ระบบผู้ดูแล</h3>
             <p class="modal-message" style="margin-bottom: 24px;">กรุณากรอกข้อมูลเพื่อเข้าสู่ระบบ</p>
             <form id="loginForm">
@@ -1979,51 +619,37 @@
                     <label>รหัสผ่าน</label>
                     <input type="password" class="form-input" id="loginPassword" placeholder="Password" required>
                 </div>
-                <button type="submit" class="btn btn-primary">
-                    <i data-lucide="log-in"></i> เข้าสู่ระบบ
-                </button>
+                <button type="submit" class="btn btn-primary"><i data-lucide="log-in"></i> เข้าสู่ระบบ</button>
             </form>
         </div>
     </div>
 
-    <!-- ==================== -->
     <!-- RESULT MODAL -->
-    <!-- ==================== -->
     <div class="modal-overlay" id="resultModal">
         <div class="modal">
-            <div class="modal-icon" id="resultIcon">
-                <i data-lucide="check"></i>
-            </div>
+            <div class="modal-icon" id="resultIcon"><i data-lucide="check"></i></div>
             <h3 class="modal-title" id="resultTitle">สำเร็จ!</h3>
             <p class="modal-message" id="resultMessage">ดำเนินการเรียบร้อย</p>
             <button class="btn btn-primary" onclick="closeResultModal()">ตกลง</button>
         </div>
     </div>
 
-    <!-- Hidden canvas for capturing photo -->
     <canvas id="captureCanvas" style="display: none;"></canvas>
 
-    <script>                      
+    <script>
         // ==========================================
         // Configuration
         // ==========================================
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxspRfjXVsft4j7_MobCUxPmhF7xOPw6TMc7SqCsonxGxjWQ2AF4CLIBxTrcVBik2BtlA/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbza9VZohV2QlrQfhrT_QM7CeU57Mct6ijfecogZMSyz6f64FmUQLM1NZtZqDJ6uS43pdg/exec';
         const FACE_MATCH_THRESHOLD = 0.5;
         const DETECTION_INTERVAL = 300;
 
+        // พิกัดพื้นที่ใหม่
         const WORK_AREA_POLYGON = [
             { lat: 17.3863440, lng: 102.7713275 },
             { lat: 17.3868509, lng: 102.7702895 },
             { lat: 17.3873039, lng: 102.7705228 },
             { lat: 17.3867894, lng: 102.7715635 }
-        ];
-
-        // Liveness challenges
-        const LIVENESS_CHALLENGES = [
-            { type: 'smile', text: 'กรุณายิ้ม 😊', icon: 'smile', hint: 'ค้างไว้ 2 วินาที' },
-            { type: 'turnLeft', text: 'หันหน้าไปทางซ้าย ←', icon: 'arrow-left', hint: 'หันช้าๆ แล้วกลับมา' },
-            { type: 'turnRight', text: 'หันหน้าไปทางขวา →', icon: 'arrow-right', hint: 'หันช้าๆ แล้วกลับมา' },
-            { type: 'blink', text: 'กระพริบตา 👀', icon: 'eye', hint: 'กระพริบตา 2 ครั้ง' }
         ];
 
         // ==========================================
@@ -2040,28 +666,17 @@
         let isDetecting = false;
         let detectionInterval = null;
         let selectedShift = null;
-
-        // Liveness state
-        let livenessActive = false;
-        let livenessCompleted = false;
-        let currentChallenges = [];
-        let currentChallengeIndex = 0;
-        let challengeStartTime = 0;
-        let challengeDetectionCount = 0;
-        let lastExpressions = null;
-        let lastYawAngle = 0;
-        let blinkCount = 0;
-        let eyeClosedFrames = 0;
-
-        // Registration
         let regVideoStream = null;
         let regDetectionInterval = null;
         let regFaceDescriptor = null;
         let selectedRegEmployee = null;
-
-        // Charts
         let shiftChart = null;
         let statusChart = null;
+
+        // ==========================================
+        // Spinner SVG
+        // ==========================================
+        const spinnerSVG = `<svg class="spinner-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`;
 
         // ==========================================
         // Initialize
@@ -2070,6 +685,9 @@
             lucide.createIcons();
             updateDateTime();
             setInterval(updateDateTime, 1000);
+            
+            // Restore session
+            restoreSession();
             
             setupEventListeners();
             await loadFaceApiModels();
@@ -2080,45 +698,61 @@
         });
 
         // ==========================================
-        // API Helper Function - แก้ไขการส่ง JSON
+        // Session Management - Prevent logout on refresh
         // ==========================================
-        async function callAPI(data) {
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8',
-                    },
-                    redirect: 'follow',
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                return result;
-            } catch (error) {
-                console.error('API Error:', error);
-                throw error;
+        function saveSession() {
+            if (currentUser) {
+                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            }
+            sessionStorage.setItem('currentPage', getCurrentPage());
+        }
+
+        function restoreSession() {
+            const savedUser = sessionStorage.getItem('currentUser');
+            const savedPage = sessionStorage.getItem('currentPage');
+            
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+            }
+            
+            if (savedPage && savedPage !== 'pageAttendance') {
+                if (currentUser || savedPage === 'pageAttendance') {
+                    showPage(savedPage, false);
+                }
             }
         }
 
+        function getCurrentPage() {
+            const pages = ['pageAttendance', 'pageAdmin', 'pageDashboard'];
+            for (const p of pages) {
+                if (document.getElementById(p).classList.contains('active')) return p;
+            }
+            return 'pageAttendance';
+        }
+
         // ==========================================
-        // Capture Photo from Video
+        // API Helper
+        // ==========================================
+        async function callAPI(data) {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(data)
+            });
+            return await response.json();
+        }
+
+        // ==========================================
+        // Capture Photo
         // ==========================================
         function capturePhoto(videoElement) {
             const canvas = document.getElementById('captureCanvas');
-            const context = canvas.getContext('2d');
-            
+            const ctx = canvas.getContext('2d');
             canvas.width = videoElement.videoWidth;
             canvas.height = videoElement.videoHeight;
-            
-            // Draw mirrored image
-            context.translate(canvas.width, 0);
-            context.scale(-1, 1);
-            context.drawImage(videoElement, 0, 0);
-            
-            // Convert to base64 JPEG
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(videoElement, 0, 0);
             return canvas.toDataURL('image/jpeg', 0.8);
         }
 
@@ -2126,7 +760,6 @@
         // Event Listeners
         // ==========================================
         function setupEventListeners() {
-            // Shift buttons
             document.querySelectorAll('.shift-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
@@ -2136,35 +769,24 @@
                 });
             });
 
-            // Action buttons
-            document.getElementById('btnCheckIn').addEventListener('click', () => startLivenessCheck('checkIn'));
-            document.getElementById('btnCheckOut').addEventListener('click', () => startLivenessCheck('checkOut'));
-
-            // Login form
+            // NO LIVENESS - Direct record
+            document.getElementById('btnCheckIn').addEventListener('click', () => recordAttendance('checkIn'));
+            document.getElementById('btnCheckOut').addEventListener('click', () => recordAttendance('checkOut'));
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
-
-            // Add employee form
             document.getElementById('addEmployeeForm').addEventListener('submit', handleAddEmployee);
 
-            // Tabs
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     btn.classList.add('active');
                     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-                    
-                    if (btn.dataset.tab !== 'register-face') {
-                        stopRegCamera();
-                    }
+                    if (btn.dataset.tab !== 'register-face') stopRegCamera();
                     lucide.createIcons();
                 });
             });
 
-            // Registration employee select
             document.getElementById('regEmployeeSelect').addEventListener('change', handleRegEmployeeChange);
-
-            // Save face button
             document.getElementById('btnSaveFace').addEventListener('click', saveFace);
         }
 
@@ -2173,30 +795,23 @@
         // ==========================================
         async function loadFaceApiModels() {
             const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
-            
             try {
                 document.getElementById('loadingText').textContent = 'กำลังโหลด Face Detection...';
-                document.getElementById('loadingProgress').style.width = '20%';
+                document.getElementById('loadingProgress').style.width = '25%';
                 await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
                 
                 document.getElementById('loadingText').textContent = 'กำลังโหลด Face Landmark...';
-                document.getElementById('loadingProgress').style.width = '40%';
+                document.getElementById('loadingProgress').style.width = '50%';
                 await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
                 
                 document.getElementById('loadingText').textContent = 'กำลังโหลด Face Recognition...';
-                document.getElementById('loadingProgress').style.width = '60%';
+                document.getElementById('loadingProgress').style.width = '75%';
                 await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-                
-                document.getElementById('loadingText').textContent = 'กำลังโหลด Face Expression...';
-                document.getElementById('loadingProgress').style.width = '80%';
-                await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
                 
                 document.getElementById('loadingText').textContent = 'พร้อมใช้งาน!';
                 document.getElementById('loadingProgress').style.width = '100%';
                 
-                setTimeout(() => {
-                    document.getElementById('loadingOverlay').classList.add('hidden');
-                }, 600);
+                setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 500);
             } catch (error) {
                 console.error('Error loading models:', error);
                 document.getElementById('loadingText').textContent = 'เกิดข้อผิดพลาด กรุณารีเฟรช';
@@ -2209,32 +824,22 @@
         async function loadEmployeesWithFace() {
             try {
                 const result = await callAPI({ action: 'getEmployeesWithFace' });
-                
                 if (result.status === 'success') {
                     allEmployees = result.data;
                     employees = result.data.filter(emp => emp.hasFaceData);
                     renderEmployeeList();
                     populateRegEmployeeSelect();
                 }
-            } catch (error) {
-                console.error('Error loading employees:', error);
-            }
+            } catch (e) { console.error('Error loading employees:', e); }
         }
 
         function renderEmployeeList() {
             const list = document.getElementById('employeeList');
-            const filtered = allEmployees.filter(emp => {
-                const search = document.getElementById('searchEmployee')?.value?.toLowerCase() || '';
-                return emp.name.toLowerCase().includes(search) || emp.id.toLowerCase().includes(search);
-            });
+            const search = document.getElementById('searchEmployee')?.value?.toLowerCase() || '';
+            const filtered = allEmployees.filter(emp => emp.name.toLowerCase().includes(search) || emp.id.toLowerCase().includes(search));
 
             if (filtered.length === 0) {
-                list.innerHTML = `
-                    <div class="empty-state">
-                        <i data-lucide="users"></i>
-                        <p>ไม่พบข้อมูลพนักงาน</p>
-                    </div>
-                `;
+                list.innerHTML = `<div class="empty-state"><i data-lucide="users"></i><p>ไม่พบข้อมูลพนักงาน</p></div>`;
                 lucide.createIcons();
                 return;
             }
@@ -2251,23 +856,15 @@
                         <p>${emp.id} | ${emp.position}</p>
                     </div>
                     <div class="emp-actions">
-                        <button class="icon-btn primary" onclick="selectForReg('${emp.id}')" title="ลงทะเบียนใบหน้า">
-                            <i data-lucide="camera"></i>
-                        </button>
-                        ${emp.hasFaceData ? `
-                            <button class="icon-btn danger" onclick="deleteFace('${emp.id}')" title="ลบข้อมูลใบหน้า">
-                                <i data-lucide="trash-2"></i>
-                            </button>
-                        ` : ''}
+                        <button class="icon-btn primary" onclick="selectForReg('${emp.id}')" title="ลงทะเบียนใบหน้า"><i data-lucide="camera"></i></button>
+                        ${emp.hasFaceData ? `<button class="icon-btn danger" onclick="deleteFace('${emp.id}')" title="ลบข้อมูลใบหน้า"><i data-lucide="trash-2"></i></button>` : ''}
                     </div>
                 </div>
             `).join('');
             lucide.createIcons();
         }
 
-        function filterEmployees() {
-            renderEmployeeList();
-        }
+        function filterEmployees() { renderEmployeeList(); }
 
         function populateRegEmployeeSelect() {
             const select = document.getElementById('regEmployeeSelect');
@@ -2286,12 +883,7 @@
         function updateDateTime() {
             const now = new Date();
             document.getElementById('currentTime').textContent = now.toLocaleTimeString('th-TH', { hour12: false });
-            document.getElementById('currentDate').textContent = now.toLocaleDateString('th-TH', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         }
 
         // ==========================================
@@ -2299,42 +891,24 @@
         // ==========================================
         function isPointInPolygon(lat, lng, polygon) {
             let inside = false;
-            const n = polygon.length;
-            for (let i = 0, j = n - 1; i < n; j = i++) {
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
                 const xi = polygon[i].lat, yi = polygon[i].lng;
                 const xj = polygon[j].lat, yj = polygon[j].lng;
-                if (((yi > lng) !== (yj > lng)) && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi)) {
-                    inside = !inside;
-                }
+                if (((yi > lng) !== (yj > lng)) && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi)) inside = !inside;
             }
             return inside;
         }
 
         function getLocation() {
-            if (!navigator.geolocation) {
-                updateLocationStatus('invalid', 'ไม่รองรับ GPS');
-                return;
-            }
-
+            if (!navigator.geolocation) { updateLocationStatus('invalid', 'ไม่รองรับ GPS'); return; }
             navigator.geolocation.watchPosition(
                 (position) => {
-                    currentLocation = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    };
+                    currentLocation = { latitude: position.coords.latitude, longitude: position.coords.longitude };
                     locationValid = isPointInPolygon(currentLocation.latitude, currentLocation.longitude, WORK_AREA_POLYGON);
-                    
-                    if (locationValid) {
-                        updateLocationStatus('valid', 'อยู่ในพื้นที่');
-                    } else {
-                        updateLocationStatus('invalid', 'นอกพื้นที่');
-                    }
+                    updateLocationStatus(locationValid ? 'valid' : 'invalid', locationValid ? 'อยู่ในพื้นที่' : 'นอกพื้นที่');
                     checkActionButtons();
                 },
-                (error) => {
-                    updateLocationStatus('invalid', 'ไม่พบตำแหน่ง');
-                    locationValid = false;
-                },
+                () => { updateLocationStatus('invalid', 'ไม่พบตำแหน่ง'); locationValid = false; },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
             );
         }
@@ -2342,8 +916,7 @@
         function updateLocationStatus(status, message) {
             const el = document.getElementById('locationStatus');
             el.className = 'status-card location ' + status;
-            const icon = status === 'valid' ? 'map-pin' : 'map-pin-off';
-            el.innerHTML = `<i data-lucide="${icon}"></i><span>${message}</span>`;
+            el.innerHTML = `<i data-lucide="${status === 'valid' ? 'map-pin' : 'map-pin-off'}"></i><span>${message}</span>`;
             lucide.createIcons();
         }
 
@@ -2352,13 +925,9 @@
         // ==========================================
         async function startCamera() {
             try {
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-                });
-                
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
                 const video = document.getElementById('video');
                 video.srcObject = videoStream;
-                
                 video.onloadedmetadata = () => {
                     video.play();
                     document.getElementById('cameraPlaceholder').style.display = 'none';
@@ -2367,10 +936,7 @@
                 };
             } catch (error) {
                 console.error('Camera error:', error);
-                document.getElementById('cameraPlaceholder').innerHTML = `
-                    <i data-lucide="camera-off"></i>
-                    <p>ไม่สามารถเปิดกล้องได้</p>
-                `;
+                document.getElementById('cameraPlaceholder').innerHTML = `<i data-lucide="camera-off"></i><p>ไม่สามารถเปิดกล้องได้</p>`;
                 lucide.createIcons();
             }
         }
@@ -2380,20 +946,12 @@
         // ==========================================
         function startFaceDetection() {
             if (detectionInterval) clearInterval(detectionInterval);
-            
             detectionInterval = setInterval(async () => {
                 if (isDetecting) return;
                 const video = document.getElementById('video');
                 if (video.paused || video.ended) return;
-                
                 isDetecting = true;
-                
-                if (livenessActive) {
-                    await processLivenessChallenge();
-                } else {
-                    await detectAndMatchFace();
-                }
-                
+                await detectAndMatchFace();
                 isDetecting = false;
             }, DETECTION_INTERVAL);
         }
@@ -2401,17 +959,11 @@
         async function detectAndMatchFace() {
             const video = document.getElementById('video');
             const canvas = document.getElementById('overlayCanvas');
-            
             try {
-                const detection = await faceapi
-                    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks()
-                    .withFaceDescriptor()
-                    .withFaceExpressions();
-                
+                const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
+
                 if (!detection) {
                     updateFaceStatus('face', 'กำลังค้นหาใบหน้า...');
                     matchedEmployee = null;
@@ -2420,46 +972,28 @@
                     checkActionButtons();
                     return;
                 }
-                
+
                 faceDescriptor = detection.descriptor;
-                lastExpressions = detection.expressions;
-                
-                // Calculate yaw angle from landmarks
-                const landmarks = detection.landmarks;
-                const nose = landmarks.getNose()[0];
-                const leftEye = landmarks.getLeftEye()[0];
-                const rightEye = landmarks.getRightEye()[0];
-                const eyeCenter = { x: (leftEye.x + rightEye.x) / 2, y: (leftEye.y + rightEye.y) / 2 };
-                lastYawAngle = (nose.x - eyeCenter.x) / (rightEye.x - leftEye.x);
-                
                 const box = detection.detection.box;
                 const scaleX = canvas.width / video.videoWidth;
                 const scaleY = canvas.height / video.videoHeight;
-                
-                let bestMatch = null;
-                let bestDistance = 1;
-                
+
+                let bestMatch = null, bestDistance = 1;
                 for (const emp of employees) {
                     if (!emp.faceDescriptor) continue;
-                    const storedDescriptor = new Float32Array(emp.faceDescriptor);
-                    const distance = faceapi.euclideanDistance(detection.descriptor, storedDescriptor);
-                    if (distance < bestDistance && distance < FACE_MATCH_THRESHOLD) {
-                        bestDistance = distance;
-                        bestMatch = emp;
-                    }
+                    const distance = faceapi.euclideanDistance(detection.descriptor, new Float32Array(emp.faceDescriptor));
+                    if (distance < bestDistance && distance < FACE_MATCH_THRESHOLD) { bestDistance = distance; bestMatch = emp; }
                 }
-                
+
                 ctx.strokeStyle = bestMatch ? '#10B981' : '#EF4444';
                 ctx.lineWidth = 4;
                 ctx.strokeRect(box.x * scaleX, box.y * scaleY, box.width * scaleX, box.height * scaleY);
-                
+
                 if (bestMatch) {
                     matchedEmployee = bestMatch;
                     matchedEmployee.faceDistance = bestDistance;
                     const confidence = ((1 - bestDistance) * 100).toFixed(1);
-                    
                     updateFaceStatus('matched', bestMatch.name);
-                    
                     document.getElementById('matchedSection').classList.remove('hidden');
                     document.getElementById('matchedName').textContent = bestMatch.name;
                     document.getElementById('matchedPosition').textContent = `${bestMatch.id} | ${bestMatch.position}`;
@@ -2470,205 +1004,15 @@
                     updateFaceStatus('face', 'ไม่พบข้อมูลใบหน้า');
                     document.getElementById('matchedSection').classList.add('hidden');
                 }
-                
                 checkActionButtons();
-            } catch (error) {
-                console.error('Detection error:', error);
-            }
+            } catch (error) { console.error('Detection error:', error); }
         }
 
         function updateFaceStatus(status, message) {
             const el = document.getElementById('faceStatus');
             el.className = 'status-card face ' + status;
-            const icon = status === 'matched' ? 'smile' : 'scan-face';
-            el.innerHTML = `<i data-lucide="${icon}"></i><span>${message}</span>`;
+            el.innerHTML = `<i data-lucide="${status === 'matched' ? 'smile' : 'scan-face'}"></i><span>${message}</span>`;
             lucide.createIcons();
-        }
-
-        // ==========================================
-        // Liveness Detection
-        // ==========================================
-        function startLivenessCheck(action) {
-            livenessActive = true;
-            livenessCompleted = false;
-            currentChallengeIndex = 0;
-            
-            // Select 3 random challenges
-            const shuffled = [...LIVENESS_CHALLENGES].sort(() => Math.random() - 0.5);
-            currentChallenges = shuffled.slice(0, 3);
-            
-            // Store action for after completion
-            localStorage.setItem('pendingAction', action);
-            
-            showLivenessOverlay();
-            startChallenge(0);
-        }
-
-        function showLivenessOverlay() {
-            document.getElementById('livenessOverlay').classList.remove('hidden');
-            updateLivenessDots();
-        }
-
-        function hideLivenessOverlay() {
-            document.getElementById('livenessOverlay').classList.add('hidden');
-        }
-
-        function updateLivenessDots() {
-            for (let i = 0; i < 3; i++) {
-                const dot = document.getElementById(`dot${i + 1}`);
-                dot.className = 'liveness-dot';
-                if (i < currentChallengeIndex) {
-                    dot.classList.add('completed');
-                } else if (i === currentChallengeIndex) {
-                    dot.classList.add('current');
-                }
-            }
-        }
-
-        function startChallenge(index) {
-            if (index >= currentChallenges.length) {
-                livenessCompleted = true;
-                livenessActive = false;
-                hideLivenessOverlay();
-                
-                const action = localStorage.getItem('pendingAction');
-                localStorage.removeItem('pendingAction');
-                if (action) {
-                    recordAttendance(action);
-                }
-                return;
-            }
-            
-            const challenge = currentChallenges[index];
-            document.getElementById('livenessText').textContent = challenge.text;
-            document.getElementById('livenessHint').textContent = challenge.hint;
-            
-            const iconEl = document.getElementById('livenessIcon');
-            iconEl.className = 'liveness-icon';
-            if (challenge.type === 'turnLeft') iconEl.classList.add('left');
-            iconEl.innerHTML = `<i data-lucide="${challenge.icon}"></i>`;
-            
-            lucide.createIcons();
-            
-            challengeStartTime = Date.now();
-            challengeDetectionCount = 0;
-            blinkCount = 0;
-            eyeClosedFrames = 0;
-        }
-
-        async function processLivenessChallenge() {
-            const video = document.getElementById('video');
-            
-            try {
-                const detection = await faceapi
-                    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks()
-                    .withFaceExpressions();
-                
-                if (!detection) return;
-                
-                const challenge = currentChallenges[currentChallengeIndex];
-                let passed = false;
-                
-                switch (challenge.type) {
-                    case 'smile':
-                        if (detection.expressions.happy > 0.7) {
-                            challengeDetectionCount++;
-                            if (challengeDetectionCount >= 6) { // ~2 seconds
-                                passed = true;
-                            }
-                        } else {
-                            challengeDetectionCount = Math.max(0, challengeDetectionCount - 1);
-                        }
-                        break;
-                        
-                    case 'turnLeft':
-                        const landmarks = detection.landmarks;
-                        const nose = landmarks.getNose()[0];
-                        const leftEye = landmarks.getLeftEye()[0];
-                        const rightEye = landmarks.getRightEye()[0];
-                        const eyeCenter = { x: (leftEye.x + rightEye.x) / 2 };
-                        const yaw = (nose.x - eyeCenter.x) / (rightEye.x - leftEye.x);
-                        
-                        if (yaw < -0.3) { // Head turned left (appears right due to mirror)
-                            challengeDetectionCount++;
-                            if (challengeDetectionCount >= 4) {
-                                passed = true;
-                            }
-                        }
-                        break;
-                        
-                    case 'turnRight':
-                        const lm = detection.landmarks;
-                        const n = lm.getNose()[0];
-                        const le = lm.getLeftEye()[0];
-                        const re = lm.getRightEye()[0];
-                        const ec = { x: (le.x + re.x) / 2 };
-                        const y = (n.x - ec.x) / (re.x - le.x);
-                        
-                        if (y > 0.3) { // Head turned right
-                            challengeDetectionCount++;
-                            if (challengeDetectionCount >= 4) {
-                                passed = true;
-                            }
-                        }
-                        break;
-                        
-                    case 'blink':
-                        const leftEyeLandmarks = detection.landmarks.getLeftEye();
-                        const rightEyeLandmarks = detection.landmarks.getRightEye();
-                        
-                        const leftEAR = calculateEAR(leftEyeLandmarks);
-                        const rightEAR = calculateEAR(rightEyeLandmarks);
-                        const avgEAR = (leftEAR + rightEAR) / 2;
-                        
-                        if (avgEAR < 0.2) {
-                            eyeClosedFrames++;
-                        } else {
-                            if (eyeClosedFrames >= 2) {
-                                blinkCount++;
-                            }
-                            eyeClosedFrames = 0;
-                        }
-                        
-                        if (blinkCount >= 2) {
-                            passed = true;
-                        }
-                        break;
-                }
-                
-                if (passed) {
-                    currentChallengeIndex++;
-                    updateLivenessDots();
-                    startChallenge(currentChallengeIndex);
-                }
-                
-                // Timeout after 10 seconds
-                if (Date.now() - challengeStartTime > 10000) {
-                    livenessActive = false;
-                    hideLivenessOverlay();
-                    showResultModal('error', 'ไม่ผ่าน Liveness', 'กรุณาลองใหม่อีกครั้ง');
-                }
-                
-            } catch (error) {
-                console.error('Liveness error:', error);
-            }
-        }
-
-        function calculateEAR(eyeLandmarks) {
-            // Eye Aspect Ratio calculation
-            const p1 = eyeLandmarks[0];
-            const p2 = eyeLandmarks[1];
-            const p3 = eyeLandmarks[2];
-            const p4 = eyeLandmarks[3];
-            const p5 = eyeLandmarks[4];
-            const p6 = eyeLandmarks[5];
-            
-            const vertical1 = Math.sqrt(Math.pow(p2.x - p6.x, 2) + Math.pow(p2.y - p6.y, 2));
-            const vertical2 = Math.sqrt(Math.pow(p3.x - p5.x, 2) + Math.pow(p3.y - p5.y, 2));
-            const horizontal = Math.sqrt(Math.pow(p1.x - p4.x, 2) + Math.pow(p1.y - p4.y, 2));
-            
-            return (vertical1 + vertical2) / (2 * horizontal);
         }
 
         // ==========================================
@@ -2680,21 +1024,17 @@
             document.getElementById('btnCheckOut').disabled = !isReady;
         }
 
+        // NO LIVENESS - Direct record attendance
         async function recordAttendance(action) {
             if (!matchedEmployee || !currentLocation || !selectedShift) return;
-            
-            if (!locationValid) {
-                showResultModal('error', 'ไม่สามารถลงเวลาได้', 'คุณอยู่นอกพื้นที่ที่กำหนด');
-                return;
-            }
-            
+            if (!locationValid) { showResultModal('error', 'ไม่สามารถลงเวลาได้', 'คุณอยู่นอกพื้นที่ที่กำหนด'); return; }
+
             const btn = action === 'checkIn' ? document.getElementById('btnCheckIn') : document.getElementById('btnCheckOut');
             const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<svg class="spinning" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
+            btn.innerHTML = spinnerSVG + ' <span>กำลังบันทึก...</span>';
             btn.disabled = true;
-            
+
             try {
-                // Capture photo
                 const video = document.getElementById('video');
                 const photoBase64 = capturePhoto(video);
                 
@@ -2707,18 +1047,13 @@
                     faceVerified: true,
                     faceConfidence: 1 - matchedEmployee.faceDistance,
                     shift: selectedShift,
-                    livenessVerified: livenessCompleted,
                     photoBase64: photoBase64
                 });
-                
+
                 if (result.status === 'success') {
                     const type = action === 'checkIn' ? 'เข้างาน' : 'ออกงาน';
                     const isLate = result.data.lateStatus !== 'ปกติ';
-                    showResultModal(
-                        isLate ? 'warning' : 'success',
-                        `บันทึก${type}สำเร็จ!`,
-                        `${matchedEmployee.name}\nผลัด: ${result.data.shift}\nเวลา: ${result.data.time}\nสถานะ: ${result.data.lateStatus}`
-                    );
+                    showResultModal(isLate ? 'warning' : 'success', `บันทึก${type}สำเร็จ!`, `${matchedEmployee.name}\nผลัด: ${result.data.shift}\nเวลา: ${result.data.time}\nสถานะ: ${result.data.lateStatus}`);
                 } else {
                     showResultModal('error', 'ไม่สำเร็จ', result.message);
                 }
@@ -2728,7 +1063,6 @@
             } finally {
                 btn.innerHTML = originalHTML;
                 lucide.createIcons();
-                livenessCompleted = false;
                 checkActionButtons();
             }
         }
@@ -2736,30 +1070,23 @@
         // ==========================================
         // Login
         // ==========================================
-        function showLoginModal() {
-            document.getElementById('loginModal').classList.add('active');
-            lucide.createIcons();
-        }
-
-        function closeLoginModal() {
-            document.getElementById('loginModal').classList.remove('active');
-        }
+        function showLoginModal() { document.getElementById('loginModal').classList.add('active'); lucide.createIcons(); }
+        function closeLoginModal() { document.getElementById('loginModal').classList.remove('active'); }
 
         async function handleLogin(e) {
             e.preventDefault();
             const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
-            
             const btn = e.target.querySelector('button[type="submit"]');
             const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<svg class="spinning" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> กำลังเข้าสู่ระบบ...';
+            btn.innerHTML = spinnerSVG + ' กำลังเข้าสู่ระบบ...';
             btn.disabled = true;
-            
+
             try {
                 const result = await callAPI({ action: 'login', username, password });
-                
                 if (result.status === 'success') {
                     currentUser = result.data;
+                    saveSession();
                     closeLoginModal();
                     showPage('pageAdmin');
                     await loadEmployeesWithFace();
@@ -2768,7 +1095,7 @@
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                showResultModal('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้\n\nกรุณาตรวจสอบ:\n1. API_URL ถูกต้อง\n2. Deploy Web App แล้ว\n3. รัน initialSetup แล้ว');
+                showResultModal('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
             } finally {
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
@@ -2778,24 +1105,20 @@
 
         function logout() {
             currentUser = null;
+            sessionStorage.removeItem('currentUser');
+            sessionStorage.removeItem('currentPage');
             showPage('pageAttendance');
         }
 
         // ==========================================
         // Pages
         // ==========================================
-        function showPage(pageId) {
+        function showPage(pageId, save = true) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
-            
-            if (pageId === 'pageDashboard') {
-                setToday();
-            }
-            
-            if (pageId !== 'pageAdmin') {
-                stopRegCamera();
-            }
-            
+            if (pageId === 'pageDashboard') setToday();
+            if (pageId !== 'pageAdmin') stopRegCamera();
+            if (save) saveSession();
             lucide.createIcons();
         }
 
@@ -2804,7 +1127,6 @@
         // ==========================================
         async function handleAddEmployee(e) {
             e.preventDefault();
-            
             const data = {
                 action: 'addEmployee',
                 id: document.getElementById('newEmpId').value.trim(),
@@ -2812,15 +1134,13 @@
                 position: document.getElementById('newEmpPosition').value.trim(),
                 department: document.getElementById('newEmpDepartment').value.trim()
             };
-            
+
             try {
                 const result = await callAPI(data);
-                
                 if (result.status === 'success') {
                     showResultModal('success', 'สำเร็จ!', result.message);
                     document.getElementById('addEmployeeForm').reset();
                     await loadEmployeesWithFace();
-                    
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     document.querySelector('[data-tab="employees"]').classList.add('active');
@@ -2829,7 +1149,6 @@
                     showResultModal('error', 'ไม่สำเร็จ', result.message);
                 }
             } catch (error) {
-                console.error('Error:', error);
                 showResultModal('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
             }
         }
@@ -2842,7 +1161,6 @@
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelector('[data-tab="register-face"]').classList.add('active');
             document.getElementById('tab-register-face').classList.add('active');
-            
             document.getElementById('regEmployeeSelect').value = empId;
             handleRegEmployeeChange();
             lucide.createIcons();
@@ -2850,7 +1168,6 @@
 
         async function handleRegEmployeeChange() {
             const empId = document.getElementById('regEmployeeSelect').value;
-            
             if (empId) {
                 selectedRegEmployee = allEmployees.find(e => e.id === empId);
                 showSelectedEmployee();
@@ -2866,16 +1183,13 @@
         function showSelectedEmployee() {
             const div = document.getElementById('selectedEmployee');
             div.classList.remove('hidden');
-            
             document.getElementById('selectedName').textContent = selectedRegEmployee.name;
             document.getElementById('selectedPosition').textContent = `${selectedRegEmployee.position} | ${selectedRegEmployee.department}`;
             document.getElementById('selectedAvatar').textContent = selectedRegEmployee.name.charAt(0);
-            
             document.getElementById('currentFaceStatus').classList.remove('hidden');
             document.getElementById('faceRegistrationStatus').innerHTML = selectedRegEmployee.hasFaceData
                 ? '<span class="emp-badge registered"><i data-lucide="check"></i> ลงทะเบียนใบหน้าแล้ว</span>'
                 : '<span class="emp-badge not-registered"><i data-lucide="alert-circle"></i> ยังไม่ได้ลงทะเบียน</span>';
-            
             lucide.createIcons();
         }
 
@@ -2886,58 +1200,36 @@
 
         async function startRegCamera() {
             try {
-                regVideoStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-                });
-                
+                regVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
                 const video = document.getElementById('regVideo');
                 video.srcObject = regVideoStream;
-                
                 video.onloadedmetadata = () => {
                     video.play();
                     document.getElementById('regPlaceholder').style.display = 'none';
                     document.getElementById('regCanvas').width = video.videoWidth;
                     document.getElementById('regCanvas').height = video.videoHeight;
                 };
-            } catch (error) {
-                console.error('Camera error:', error);
-            }
+            } catch (error) { console.error('Camera error:', error); }
         }
 
         function stopRegCamera() {
-            if (regDetectionInterval) {
-                clearInterval(regDetectionInterval);
-                regDetectionInterval = null;
-            }
-            
-            if (regVideoStream) {
-                regVideoStream.getTracks().forEach(track => track.stop());
-                regVideoStream = null;
-            }
-            
+            if (regDetectionInterval) { clearInterval(regDetectionInterval); regDetectionInterval = null; }
+            if (regVideoStream) { regVideoStream.getTracks().forEach(track => track.stop()); regVideoStream = null; }
             const video = document.getElementById('regVideo');
             if (video) video.srcObject = null;
-            
             const placeholder = document.getElementById('regPlaceholder');
-            if (placeholder) {
-                placeholder.style.display = 'flex';
-                placeholder.innerHTML = `<i data-lucide="camera"></i><p>กรุณาเลือกพนักงาน</p>`;
-            }
-            
+            if (placeholder) { placeholder.style.display = 'flex'; placeholder.innerHTML = `<i data-lucide="camera"></i><p>กรุณาเลือกพนักงาน</p>`; }
             regFaceDescriptor = null;
             const btnSaveFace = document.getElementById('btnSaveFace');
             if (btnSaveFace) btnSaveFace.disabled = true;
-            
             lucide.createIcons();
         }
 
         function startRegFaceDetection() {
             if (regDetectionInterval) clearInterval(regDetectionInterval);
-            
             regDetectionInterval = setInterval(async () => {
                 const video = document.getElementById('regVideo');
                 if (!video || video.paused || video.ended || !selectedRegEmployee) return;
-                
                 await detectRegFace();
             }, 300);
         }
@@ -2945,67 +1237,53 @@
         async function detectRegFace() {
             const video = document.getElementById('regVideo');
             const canvas = document.getElementById('regCanvas');
-            
             try {
-                const detection = await faceapi
-                    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks()
-                    .withFaceDescriptor();
-                
+                const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
+
                 if (!detection) {
                     updateRegFaceStatus('detecting', 'ไม่พบใบหน้า');
                     regFaceDescriptor = null;
                     document.getElementById('btnSaveFace').disabled = true;
                     return;
                 }
-                
+
                 regFaceDescriptor = detection.descriptor;
-                
                 const box = detection.detection.box;
                 const scaleX = canvas.width / video.videoWidth;
                 const scaleY = canvas.height / video.videoHeight;
-                
                 ctx.strokeStyle = '#10B981';
                 ctx.lineWidth = 4;
                 ctx.strokeRect(box.x * scaleX, box.y * scaleY, box.width * scaleX, box.height * scaleY);
-                
                 updateRegFaceStatus('detected', 'พบใบหน้า - พร้อมบันทึก');
                 document.getElementById('btnSaveFace').disabled = false;
-            } catch (error) {
-                console.error('Detection error:', error);
-            }
+            } catch (error) { console.error('Detection error:', error); }
         }
 
         function updateRegFaceStatus(status, message) {
             const el = document.getElementById('regFaceStatus');
             el.className = 'face-status ' + status;
-            const icon = status === 'detected' ? 'smile' : 'scan-face';
-            el.innerHTML = `<i data-lucide="${icon}"></i><span>${message}</span>`;
+            el.innerHTML = `<i data-lucide="${status === 'detected' ? 'smile' : 'scan-face'}"></i><span>${message}</span>`;
             lucide.createIcons();
         }
 
         async function saveFace() {
             if (!regFaceDescriptor || !selectedRegEmployee) return;
-            
             const btn = document.getElementById('btnSaveFace');
             btn.disabled = true;
-            btn.innerHTML = '<svg class="spinning" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> กำลังบันทึก...';
-            
+            btn.innerHTML = spinnerSVG + ' กำลังบันทึก...';
+
             try {
-                // Capture photo from registration camera
                 const video = document.getElementById('regVideo');
                 const photoBase64 = capturePhoto(video);
-                
                 const result = await callAPI({
                     action: 'registerFace',
                     employeeId: selectedRegEmployee.id,
                     faceDescriptor: Array.from(regFaceDescriptor),
                     photoBase64: photoBase64
                 });
-                
+
                 if (result.status === 'success') {
                     showResultModal('success', 'สำเร็จ!', result.message);
                     await loadEmployeesWithFace();
@@ -3015,7 +1293,6 @@
                     showResultModal('error', 'ไม่สำเร็จ', result.message);
                 }
             } catch (error) {
-                console.error('Error:', error);
                 showResultModal('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
             } finally {
                 btn.disabled = false;
@@ -3026,10 +1303,8 @@
 
         async function deleteFace(empId) {
             if (!confirm('ต้องการลบข้อมูลใบหน้าของพนักงานนี้?')) return;
-            
             try {
                 const result = await callAPI({ action: 'deleteFace', employeeId: empId });
-                
                 if (result.status === 'success') {
                     showResultModal('success', 'สำเร็จ!', result.message);
                     await loadEmployeesWithFace();
@@ -3037,7 +1312,6 @@
                     showResultModal('error', 'ไม่สำเร็จ', result.message);
                 }
             } catch (error) {
-                console.error('Error:', error);
                 showResultModal('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
             }
         }
@@ -3047,128 +1321,69 @@
         // ==========================================
         function setToday() {
             const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            document.getElementById('dashboardDate').value = `${yyyy}-${mm}-${dd}`;
+            document.getElementById('dashboardDate').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
             loadDashboard();
         }
 
         async function loadDashboard() {
             const dateInput = document.getElementById('dashboardDate').value;
             if (!dateInput) return;
-            
             const [yyyy, mm, dd] = dateInput.split('-');
             const dateStr = `${dd}/${mm}/${yyyy}`;
-            
+
             try {
                 const empResult = await callAPI({ action: 'getEmployees' });
                 document.getElementById('statTotal').textContent = empResult.data?.length || 0;
-                
                 const result = await callAPI({ action: 'getDashboard', date: dateStr });
-                
+
                 if (result.status === 'success') {
                     const data = result.data;
-                    
                     document.getElementById('statCheckins').textContent = data.totalCheckins || 0;
                     document.getElementById('statCheckouts').textContent = data.totalCheckouts || 0;
                     document.getElementById('statLate').textContent = data.totalLate || 0;
                     document.getElementById('statLateMinutes').textContent = data.lateMinutesTotal || 0;
-                    
                     renderCharts(data);
                     renderDashboardTable(data.employees);
                 }
-            } catch (error) {
-                console.error('Dashboard error:', error);
-            }
+            } catch (error) { console.error('Dashboard error:', error); }
         }
 
         function renderCharts(data) {
             const byShift = data.byShift || {};
-            
             const shiftCtx = document.getElementById('shiftChart').getContext('2d');
             if (shiftChart) shiftChart.destroy();
-            
             shiftChart = new Chart(shiftCtx, {
                 type: 'doughnut',
-                data: {
-                    labels: Object.keys(byShift),
-                    datasets: [{
-                        data: Object.values(byShift).map(s => s.checkins || 0),
-                        backgroundColor: ['#10B981', '#0EA5E9', '#F59E0B'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } }
-                }
+                data: { labels: Object.keys(byShift), datasets: [{ data: Object.values(byShift).map(s => s.checkins || 0), backgroundColor: ['#10B981', '#0EA5E9', '#F59E0B'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
 
             const statusCtx = document.getElementById('statusChart').getContext('2d');
             if (statusChart) statusChart.destroy();
-            
             statusChart = new Chart(statusCtx, {
                 type: 'bar',
-                data: {
-                    labels: ['เข้างานปกติ', 'มาสาย', 'ออกงานแล้ว'],
-                    datasets: [{
-                        data: [
-                            (data.totalCheckins || 0) - (data.totalLate || 0),
-                            data.totalLate || 0,
-                            data.totalCheckouts || 0
-                        ],
-                        backgroundColor: ['#10B981', '#EF4444', '#0EA5E9'],
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-                }
+                data: { labels: ['เข้างานปกติ', 'มาสาย', 'ออกงานแล้ว'], datasets: [{ data: [(data.totalCheckins || 0) - (data.totalLate || 0), data.totalLate || 0, data.totalCheckouts || 0], backgroundColor: ['#10B981', '#EF4444', '#0EA5E9'], borderRadius: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
             });
         }
 
         function renderDashboardTable(employees) {
             const tbody = document.getElementById('dashboardTable');
-            
             if (!employees || employees.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="empty-state">
-                            <i data-lucide="inbox"></i>
-                            <p>ไม่มีข้อมูลในวันที่เลือก</p>
-                        </td>
-                    </tr>
-                `;
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><i data-lucide="inbox"></i><p>ไม่มีข้อมูลในวันที่เลือก</p></td></tr>`;
                 lucide.createIcons();
                 return;
             }
-            
-            tbody.innerHTML = employees.map(emp => {
-                const isLate = emp.status !== 'ปกติ' && emp.status;
-                return `
-                    <tr>
-                        <td>
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">${emp.name.charAt(0)}</div>
-                                <div>
-                                    <div style="font-weight: 500;">${emp.name}</div>
-                                    <div style="font-size: 0.8rem; color: var(--text-muted);">${emp.id}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>${emp.shift || '-'}</td>
-                        <td>${emp.checkIn || '-'}</td>
-                        <td>${emp.checkOut || '-'}</td>
-                        <td><span class="status-badge ${isLate ? 'late' : 'normal'}">${emp.status || 'ปกติ'}</span></td>
-                        <td>${emp.lateMinutes || 0}</td>
-                    </tr>
-                `;
-            }).join('');
+            tbody.innerHTML = employees.map(emp => `
+                <tr>
+                    <td><div style="display: flex; align-items: center; gap: 12px;"><div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">${emp.name.charAt(0)}</div><div><div style="font-weight: 500;">${emp.name}</div><div style="font-size: 0.8rem; color: var(--text-muted);">${emp.id}</div></div></div></td>
+                    <td>${emp.shift || '-'}</td>
+                    <td>${emp.checkIn || '-'}</td>
+                    <td>${emp.checkOut || '-'}</td>
+                    <td><span class="status-badge ${emp.status !== 'ปกติ' && emp.status ? 'late' : 'normal'}">${emp.status || 'ปกติ'}</span></td>
+                    <td>${emp.lateMinutes || 0}</td>
+                </tr>
+            `).join('');
         }
 
         // ==========================================
@@ -3177,29 +1392,17 @@
         function showResultModal(type, title, message) {
             const modal = document.getElementById('resultModal');
             const icon = document.getElementById('resultIcon');
-            
             icon.className = 'modal-icon ' + type;
-            const iconName = type === 'success' ? 'check' : type === 'error' ? 'x' : 'alert-triangle';
-            icon.innerHTML = `<i data-lucide="${iconName}"></i>`;
-            
+            icon.innerHTML = `<i data-lucide="${type === 'success' ? 'check' : type === 'error' ? 'x' : 'alert-triangle'}"></i>`;
             document.getElementById('resultTitle').textContent = title;
             document.getElementById('resultMessage').textContent = message;
-            
             modal.classList.add('active');
             lucide.createIcons();
         }
 
-        function closeResultModal() {
-            document.getElementById('resultModal').classList.remove('active');
-        }
-
-        document.getElementById('resultModal').addEventListener('click', (e) => {
-            if (e.target.id === 'resultModal') closeResultModal();
-        });
-
-        document.getElementById('loginModal').addEventListener('click', (e) => {
-            if (e.target.id === 'loginModal') closeLoginModal();
-        });
+        function closeResultModal() { document.getElementById('resultModal').classList.remove('active'); }
+        document.getElementById('resultModal').addEventListener('click', (e) => { if (e.target.id === 'resultModal') closeResultModal(); });
+        document.getElementById('loginModal').addEventListener('click', (e) => { if (e.target.id === 'loginModal') closeLoginModal(); });
     </script>
 </body>
 </html>
