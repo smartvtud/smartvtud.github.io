@@ -104,6 +104,34 @@
             50% { opacity: 0.5; }
         }
 
+        /* Spinning animation for loader icons */
+        [data-lucide="loader-2"],
+        .lucide-loader-2,
+        svg.lucide-loader-2 {
+            animation: spin 1s linear infinite !important;
+        }
+
+        .spinner,
+        .spinning {
+            animation: spin 1s linear infinite !important;
+            display: inline-block;
+        }
+
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .btn.loading svg,
+        .btn.loading [data-lucide] {
+            animation: spin 1s linear infinite !important;
+        }
+
+        .action-btn.loading svg,
+        .action-btn.loading [data-lucide] {
+            animation: spin 1s linear infinite !important;
+        }
+
         .loading-text {
             font-size: 1.1rem;
             font-weight: 500;
@@ -1979,15 +2007,15 @@
         // ==========================================
         // Configuration
         // ==========================================
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwP7jrBYVP3PJb50c2ny_EuwfQnEN2qhnJreGIOQV7ud3gzL4yRZJQo6nIWLiXTmsZvbw/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxspRfjXVsft4j7_MobCUxPmhF7xOPw6TMc7SqCsonxGxjWQ2AF4CLIBxTrcVBik2BtlA/exec';
         const FACE_MATCH_THRESHOLD = 0.5;
         const DETECTION_INTERVAL = 300;
 
         const WORK_AREA_POLYGON = [
-            { lat: 17.3861777, lng: 102.7767161 },
-            { lat: 17.3872055, lng: 102.7746327 },
-            { lat: 17.3875588, lng: 102.7748259 },
-            { lat: 17.3865068, lng: 102.7768912 }
+            { lat: 17.3863440, lng: 102.7713275 },
+            { lat: 17.3868509, lng: 102.7702895 },
+            { lat: 17.3873039, lng: 102.7705228 },
+            { lat: 17.3867894, lng: 102.7715635 }
         ];
 
         // Liveness challenges
@@ -2662,9 +2690,8 @@
             
             const btn = action === 'checkIn' ? document.getElementById('btnCheckIn') : document.getElementById('btnCheckOut');
             const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<i data-lucide="loader-2"></i>';
+            btn.innerHTML = '<svg class="spinning" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
             btn.disabled = true;
-            lucide.createIcons();
             
             try {
                 // Capture photo
@@ -2725,9 +2752,8 @@
             
             const btn = e.target.querySelector('button[type="submit"]');
             const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<i data-lucide="loader-2"></i> กำลังเข้าสู่ระบบ...';
+            btn.innerHTML = '<svg class="spinning" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> กำลังเข้าสู่ระบบ...';
             btn.disabled = true;
-            lucide.createIcons();
             
             try {
                 const result = await callAPI({ action: 'login', username, password });
@@ -2966,8 +2992,7 @@
             
             const btn = document.getElementById('btnSaveFace');
             btn.disabled = true;
-            btn.innerHTML = '<i data-lucide="loader-2"></i> กำลังบันทึก...';
-            lucide.createIcons();
+            btn.innerHTML = '<svg class="spinning" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> กำลังบันทึก...';
             
             try {
                 // Capture photo from registration camera
