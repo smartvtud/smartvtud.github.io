@@ -96,12 +96,9 @@
 
         .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px 24px; background: var(--surface-2); }
         .status-card { padding: 16px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 12px; }
-        .status-card.location { background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); color: #92400E; }
-        .status-card.location.valid { background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); color: #065F46; }
-        .status-card.location.invalid { background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); color: #991B1B; }
         .status-card.face { background: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%); color: #0369A1; }
         .status-card.face.matched { background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); color: #065F46; }
-        .status-card.face.spoofing { background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); color: #991B1B; }
+        .status-card.face.spoofing { background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); color: #92400E; }
         .status-card [data-lucide] { width: 22px; height: 22px; flex-shrink: 0; }
         .status-card span { font-size: 0.9rem; font-weight: 500; }
 
@@ -126,8 +123,7 @@
         .camera-placeholder [data-lucide] { width: 56px; height: 56px; margin-bottom: 16px; opacity: 0.6; }
 
         .matched-section { padding: 20px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 16px; background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%); }
-        .matched-avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 700; overflow: hidden; flex-shrink: 0; }
-        .matched-avatar #matchedInitial { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+        .matched-avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 700; }
         .matched-info { flex: 1; }
         .matched-info h3 { font-size: 1.15rem; font-weight: 600; }
         .matched-info p { font-size: 0.85rem; color: var(--text-secondary); }
@@ -379,10 +375,7 @@
                 </div>
 
                 <div class="matched-section hidden" id="matchedSection">
-                    <div class="matched-avatar" id="matchedAvatar">
-                        <img id="matchedPhoto" src="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;">
-                        <span id="matchedInitial">-</span>
-                    </div>
+                    <div class="matched-avatar" id="matchedAvatar">-</div>
                     <div class="matched-info">
                         <h3 id="matchedName">-</h3>
                         <p id="matchedPosition">-</p>
@@ -633,7 +626,7 @@
         // ==========================================
         // Configuration
         // ==========================================
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwUgC4NCQ_7xYZs-Y0KLB0KUlputei1dYq-f2JK0xjBRGU_YSbI4_hGEE8Jmi8iWh9kGw/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzDAmSo7bKr9VsVn_gS9g3dJrpBHivVysiXRnp65fJGfWUxnRhG4bqrosLiJU2WpAFwew/exec';
         const FACE_MATCH_THRESHOLD = 0.5;
         const DETECTION_INTERVAL = 300;
         const ITEMS_PER_PAGE = 10;
@@ -665,6 +658,12 @@
         let selectedRegEmployee = null;
         let shiftChart = null;
         let statusChart = null;
+        
+        // Anti-spoofing: Store previous frames data
+        let prevLandmarks = null;
+        let landmarkMovementHistory = [];
+        const MOVEMENT_HISTORY_SIZE = 10;
+        const LIVENESS_THRESHOLD = 0.5; // Movement threshold for liveness
         
         // Pagination
         let dashboardRecords = [];
@@ -726,33 +725,110 @@
         }
 
         // ==========================================
-        // Anti-Spoofing: Brightness Variance Detection
+        // Anti-Spoofing: Detect face landmarks movement
+        // Real faces have micro-movements (blinking, breathing)
+        // Photos/screens are static or move uniformly
         // ==========================================
-        function checkLiveness(video) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0);
+        function checkLiveness(landmarks) {
+            if (!landmarks || !landmarks.positions) return false;
             
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
+            const currentPositions = landmarks.positions;
             
-            // Calculate brightness variance
-            let sum = 0, sumSq = 0, count = 0;
-            for (let i = 0; i < data.length; i += 4) {
-                const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
-                sum += brightness;
-                sumSq += brightness * brightness;
-                count++;
+            if (!prevLandmarks) {
+                prevLandmarks = currentPositions;
+                return false; // Need at least 2 frames
             }
             
-            const mean = sum / count;
-            const variance = (sumSq / count) - (mean * mean);
+            // Calculate movement of key facial points
+            // Focus on eyes (indices 36-47) and mouth (indices 48-67)
+            const eyeIndices = [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47];
+            const mouthIndices = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67];
             
-            // Real face has more variance (shadows, depth)
-            // Photo/screen typically has less variance
-            return variance > 800; // Threshold for liveness
+            let eyeMovement = 0;
+            let mouthMovement = 0;
+            let totalMovement = 0;
+            
+            // Calculate eye movement
+            eyeIndices.forEach(i => {
+                if (currentPositions[i] && prevLandmarks[i]) {
+                    const dx = currentPositions[i].x - prevLandmarks[i].x;
+                    const dy = currentPositions[i].y - prevLandmarks[i].y;
+                    eyeMovement += Math.sqrt(dx * dx + dy * dy);
+                }
+            });
+            eyeMovement /= eyeIndices.length;
+            
+            // Calculate mouth movement
+            mouthIndices.forEach(i => {
+                if (currentPositions[i] && prevLandmarks[i]) {
+                    const dx = currentPositions[i].x - prevLandmarks[i].x;
+                    const dy = currentPositions[i].y - prevLandmarks[i].y;
+                    mouthMovement += Math.sqrt(dx * dx + dy * dy);
+                }
+            });
+            mouthMovement /= mouthIndices.length;
+            
+            // Calculate overall face movement (nose - index 30)
+            if (currentPositions[30] && prevLandmarks[30]) {
+                const dx = currentPositions[30].x - prevLandmarks[30].x;
+                const dy = currentPositions[30].y - prevLandmarks[30].y;
+                totalMovement = Math.sqrt(dx * dx + dy * dy);
+            }
+            
+            // Store current as previous for next frame
+            prevLandmarks = currentPositions;
+            
+            // Calculate relative movement (eye/mouth movement relative to face movement)
+            // Real face: eyes and mouth move independently of head
+            // Photo: everything moves together (uniform movement)
+            const relativeEyeMovement = totalMovement > 0.5 ? eyeMovement / totalMovement : eyeMovement;
+            const relativeMouthMovement = totalMovement > 0.5 ? mouthMovement / totalMovement : mouthMovement;
+            
+            // Add to movement history
+            landmarkMovementHistory.push({
+                eye: relativeEyeMovement,
+                mouth: relativeMouthMovement,
+                total: totalMovement
+            });
+            
+            // Keep only recent history
+            if (landmarkMovementHistory.length > MOVEMENT_HISTORY_SIZE) {
+                landmarkMovementHistory.shift();
+            }
+            
+            // Need enough history to make decision
+            if (landmarkMovementHistory.length < 5) {
+                return false;
+            }
+            
+            // Analyze movement pattern
+            let hasVariation = false;
+            let variationCount = 0;
+            
+            for (let i = 1; i < landmarkMovementHistory.length; i++) {
+                const prev = landmarkMovementHistory[i - 1];
+                const curr = landmarkMovementHistory[i];
+                
+                // Check for eye movement variation (blinking)
+                if (Math.abs(curr.eye - prev.eye) > LIVENESS_THRESHOLD) {
+                    variationCount++;
+                }
+                
+                // Check for mouth movement variation
+                if (Math.abs(curr.mouth - prev.mouth) > LIVENESS_THRESHOLD) {
+                    variationCount++;
+                }
+            }
+            
+            // Real face should have some natural variation
+            hasVariation = variationCount >= 2;
+            
+            return hasVariation;
+        }
+        
+        function resetLivenessDetection() {
+            prevLandmarks = null;
+            landmarkMovementHistory = [];
         }
 
         // ==========================================
@@ -990,13 +1066,14 @@
                     matchedEmployee = null;
                     faceDescriptor = null;
                     isLiveDetected = false;
+                    resetLivenessDetection();
                     document.getElementById('matchedSection').classList.add('hidden');
                     checkActionButtons();
                     return;
                 }
 
-                // Anti-spoofing check
-                isLiveDetected = checkLiveness(video);
+                // Anti-spoofing check using landmarks movement
+                isLiveDetected = checkLiveness(detection.landmarks);
                 
                 faceDescriptor = detection.descriptor;
                 const box = detection.detection.box;
@@ -1012,7 +1089,7 @@
 
                 // Draw box color based on match and liveness
                 if (!isLiveDetected) {
-                    ctx.strokeStyle = '#F59E0B'; // Warning - potential spoofing
+                    ctx.strokeStyle = '#F59E0B'; // Warning - checking liveness
                 } else if (bestMatch) {
                     ctx.strokeStyle = '#10B981'; // Green - matched and live
                 } else {
@@ -1023,7 +1100,7 @@
                 ctx.strokeRect(box.x * scaleX, box.y * scaleY, box.width * scaleX, box.height * scaleY);
 
                 if (!isLiveDetected) {
-                    updateFaceStatus('spoofing', 'ตรวจพบภาพนิ่ง!');
+                    updateFaceStatus('spoofing', 'กรุณาขยับใบหน้าเล็กน้อย');
                     matchedEmployee = null;
                     document.getElementById('matchedSection').classList.add('hidden');
                 } else if (bestMatch) {
@@ -1035,19 +1112,7 @@
                     document.getElementById('matchedName').textContent = bestMatch.name;
                     document.getElementById('matchedPosition').textContent = `${bestMatch.id} | ${bestMatch.position}`;
                     document.getElementById('matchConfidence').textContent = confidence + '%';
-                    
-                    // Show profile photo or initial
-                    const photoEl = document.getElementById('matchedPhoto');
-                    const initialEl = document.getElementById('matchedInitial');
-                    if (bestMatch.facePhoto) {
-                        photoEl.src = bestMatch.facePhoto;
-                        photoEl.style.display = 'block';
-                        initialEl.style.display = 'none';
-                    } else {
-                        photoEl.style.display = 'none';
-                        initialEl.style.display = 'flex';
-                        initialEl.textContent = bestMatch.name.charAt(0);
-                    }
+                    document.getElementById('matchedAvatar').textContent = bestMatch.name.charAt(0);
                 } else {
                     matchedEmployee = null;
                     updateFaceStatus('face', 'ไม่พบข้อมูลใบหน้า');
@@ -1060,7 +1125,9 @@
         function updateFaceStatus(status, message) {
             const el = document.getElementById('faceStatus');
             el.className = 'status-card face ' + status;
-            const icon = status === 'matched' ? 'smile' : status === 'spoofing' ? 'alert-triangle' : 'scan-face';
+            let icon = 'scan-face';
+            if (status === 'matched') icon = 'smile';
+            else if (status === 'spoofing') icon = 'alert-triangle';
             el.innerHTML = `<i data-lucide="${icon}"></i><span>${message}</span>`;
             lucide.createIcons();
         }
@@ -1496,18 +1563,12 @@
                 const statusText = isLate ? `สาย (${emp.lateMinutes} นาที)` : 'ปกติ';
                 const rowClass = isLate ? 'class="late-row"' : '';
                 
-                // Find employee to get profile photo
-                const empData = allEmployees.find(e => e.id === emp.empId);
-                const profilePhoto = empData?.facePhoto || '';
-                
-                const avatarHTML = profilePhoto 
-                    ? `<img src="${profilePhoto}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" onerror="this.outerHTML='<div style=\\'width: 40px; height: 40px; border-radius: 50%; background: ${isLate ? 'var(--danger)' : 'var(--accent)'}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;\\'>${emp.empName.charAt(0)}</div>'">`
-                    : `<div style="width: 40px; height: 40px; border-radius: 50%; background: ${isLate ? 'var(--danger)' : 'var(--accent)'}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">${emp.empName.charAt(0)}</div>`;
+                // Avatar with initial letter only
+                const avatarHTML = `<div style="width: 40px; height: 40px; border-radius: 50%; background: ${isLate ? 'var(--danger)' : 'var(--accent)'}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">${emp.empName.charAt(0)}</div>`;
                 
                 // Convert old URL format to new thumbnail format if needed
                 const convertPhotoUrl = (url) => {
                     if (!url) return '';
-                    // If old format, convert to new
                     if (url.includes('drive.google.com/uc?export=view&id=')) {
                         const id = url.split('id=')[1];
                         return 'https://lh3.googleusercontent.com/d/' + id;
