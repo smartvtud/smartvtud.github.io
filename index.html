@@ -3,363 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ระบบลงเวลาทำงาน | Face Recognition</title>
+    <title>ระบบลงเวลาทำงาน</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <style>
         :root {
-            --primary: #0F172A;
-            --primary-light: #1E293B;
-            --accent: #10B981;
-            --accent-dark: #059669;
-            --accent-light: #D1FAE5;
-            --accent-glow: rgba(16, 185, 129, 0.4);
-            --danger: #EF4444;
-            --danger-light: #FEE2E2;
-            --warning: #F59E0B;
-            --warning-light: #FEF3C7;
-            --info: #0EA5E9;
-            --info-light: #E0F2FE;
-            --surface: #FFFFFF;
-            --surface-2: #F8FAFC;
-            --surface-3: #F1F5F9;
-            --border: #E2E8F0;
-            --text: #0F172A;
-            --text-secondary: #64748B;
-            --text-muted: #94A3B8;
-            --gradient-main: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            --radius: 20px;
-            --radius-lg: 28px;
-            --radius-sm: 14px;
-            --radius-xs: 10px;
+            --primary: #0F4C75; --primary-light: #1B6CA8; --accent: #00B4D8; --accent-light: #CAF0F8;
+            --danger: #E63946; --danger-light: #FFE5E7; --warning: #F4A261; --warning-light: #FFF3E6;
+            --success: #2A9D8F; --success-light: #E6F5F3; --surface: #FFFFFF; --surface-2: #F0F7FA;
+            --border: #D0E3EC; --text: #1A3A4A; --text-secondary: #5A7A8A; --text-muted: #8AA0AC;
+            --shadow: 0 4px 6px -1px rgba(15,76,117,0.1); --shadow-lg: 0 10px 15px -3px rgba(15,76,117,0.1);
+            --radius: 16px; --radius-sm: 12px; --radius-xs: 8px;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Kanit', sans-serif; background: var(--surface-2); color: var(--text); min-height: 100vh; }
+        body { font-family: 'Kanit', sans-serif; background: linear-gradient(180deg, #E1EEF4 0%, #F0F7FA 50%, #FFF 100%); color: var(--text); min-height: 100vh; }
         .hidden { display: none !important; }
-
         @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner-icon { animation: spin 1s linear infinite; }
+        .spinner { animation: spin 1s linear infinite; }
 
-        .loading-overlay {
-            position: fixed; inset: 0; background: var(--gradient-main);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 9999; color: white;
-        }
-        .loader-ring {
-            width: 80px; height: 80px; border: 4px solid rgba(255,255,255,0.1);
-            border-radius: 50%; border-top-color: var(--accent); border-right-color: var(--accent);
-            animation: spin 1s ease-in-out infinite; margin-bottom: 32px;
-        }
-        .loading-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 20px; }
-        .progress-container { width: 240px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #34D399); border-radius: 3px; transition: width 0.4s; }
+        .loading-overlay { position: fixed; inset: 0; background: linear-gradient(135deg, #0F4C75, #1B6CA8); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; color: white; }
+        .loader-ring { width: 60px; height: 60px; border: 4px solid rgba(255,255,255,0.2); border-radius: 50%; border-top-color: var(--accent); animation: spin 1s ease-in-out infinite; margin-bottom: 20px; }
+        .loading-text { font-size: 1rem; margin-bottom: 16px; }
+        .progress-bar { width: 180px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; }
+        .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
 
         .page { display: none; min-height: 100vh; }
         .page.active { display: block; }
 
-        .attendance-page {
-            background: linear-gradient(180deg, #0F172A 0%, #1E293B 35%, #F1F5F9 35%);
-            min-height: 100vh; position: relative;
-        }
-        .att-container { max-width: 440px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
+        .att-page { background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 28%, var(--surface-2) 28%); }
+        .att-container { max-width: 420px; margin: 0 auto; padding: 16px; }
+        .att-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 28px; }
+        .att-logo { display: flex; align-items: center; gap: 10px; color: white; }
+        .att-logo .icon { width: 40px; height: 40px; background: rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .att-logo [data-lucide] { width: 22px; height: 22px; }
+        .att-logo h1 { font-size: 1.1rem; font-weight: 600; }
+        .login-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: white; padding: 10px 16px; border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .login-btn:hover { background: rgba(255,255,255,0.25); }
+        .login-btn [data-lucide] { width: 16px; height: 16px; }
 
-        .att-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 0 40px; }
-        .att-logo { display: flex; align-items: center; gap: 12px; color: white; }
-        .att-logo .icon-wrapper {
-            width: 48px; height: 48px; background: rgba(255,255,255,0.1); border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .att-logo [data-lucide] { width: 26px; height: 26px; }
-        .att-logo h1 { font-size: 1.3rem; font-weight: 600; }
+        .main-card { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow-lg); overflow: hidden; }
+        .time-section { padding: 24px 20px; text-align: center; background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%); border-bottom: 1px solid var(--border); }
+        .time-display { font-size: 3.2rem; font-weight: 700; color: var(--primary); line-height: 1; margin-bottom: 4px; }
+        .date-display { font-size: 0.9rem; color: var(--text-secondary); }
 
-        .login-btn {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: white; padding: 12px 20px; border-radius: var(--radius-xs);
-            font-family: 'Kanit'; font-size: 0.9rem; cursor: pointer;
-            display: flex; align-items: center; gap: 8px; transition: all 0.3s;
-        }
-        .login-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
-        .login-btn [data-lucide] { width: 18px; height: 18px; }
-
-        .main-card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); overflow: hidden; margin-bottom: 20px; }
-
-        .time-section { padding: 32px 24px; text-align: center; background: linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 100%); border-bottom: 1px solid var(--border); }
-        .time-display { font-size: 4rem; font-weight: 700; line-height: 1; margin-bottom: 8px; }
-        .date-display { font-size: 1rem; color: var(--text-secondary); }
-
-        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px 24px; background: var(--surface-2); }
-        .status-card { padding: 16px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 12px; }
-        .status-card.face { background: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%); color: #0369A1; }
-        .status-card.face.matched { background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); color: #065F46; }
-        .status-card.face.spoofing { background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); color: #92400E; }
-        .status-card [data-lucide] { width: 22px; height: 22px; flex-shrink: 0; }
+        .status-section { padding: 14px 20px; background: var(--surface-2); }
+        .status-card { padding: 12px 14px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 10px; background: var(--accent-light); color: var(--primary); }
+        .status-card.matched { background: var(--success-light); color: var(--success); }
+        .status-card [data-lucide] { width: 20px; height: 20px; }
         .status-card span { font-size: 0.9rem; font-weight: 500; }
 
-        .shift-section { padding: 24px; }
-        .section-label { font-size: 0.9rem; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-        .section-label [data-lucide] { width: 18px; height: 18px; color: var(--accent); }
-        .shift-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .shift-btn {
-            padding: 18px 12px; border: 2px solid var(--border); border-radius: var(--radius-sm);
-            background: var(--surface); cursor: pointer; text-align: center; font-family: 'Kanit'; transition: all 0.3s;
-        }
-        .shift-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
-        .shift-btn.active { border-color: var(--accent); background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: white; }
-        .shift-btn .name { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
-        .shift-btn .time { font-size: 0.75rem; opacity: 0.7; }
+        .shift-section { padding: 18px 20px; }
+        .section-label { font-size: 0.85rem; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+        .section-label [data-lucide] { width: 16px; height: 16px; color: var(--accent); }
+        .shift-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .shift-btn { padding: 12px 8px; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; text-align: center; font-family: 'Kanit'; transition: all 0.2s; }
+        .shift-btn:hover { border-color: var(--accent); }
+        .shift-btn.active { border-color: var(--accent); background: var(--accent); color: white; }
+        .shift-btn .name { font-weight: 600; font-size: 0.85rem; }
+        .shift-btn .time { font-size: 0.7rem; opacity: 0.7; }
 
-        .camera-section { padding: 0 24px 24px; }
-        .camera-wrapper { position: relative; aspect-ratio: 4/3; background: var(--primary); border-radius: var(--radius); overflow: hidden; }
+        .camera-section { padding: 0 20px 18px; }
+        .camera-wrapper { position: relative; aspect-ratio: 4/3; background: #1a1a2e; border-radius: var(--radius); overflow: hidden; }
         .camera-wrapper video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         .camera-wrapper canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
-        .camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); }
-        .camera-placeholder [data-lucide] { width: 56px; height: 56px; margin-bottom: 16px; opacity: 0.6; }
+        .camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); }
+        .camera-placeholder [data-lucide] { width: 40px; height: 40px; margin-bottom: 10px; }
 
-        .matched-section { padding: 20px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 16px; background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%); }
-        .matched-avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 700; }
+        .matched-section { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: var(--success-light); }
+        .matched-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--success); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; font-weight: 700; }
         .matched-info { flex: 1; }
-        .matched-info h3 { font-size: 1.15rem; font-weight: 600; }
-        .matched-info p { font-size: 0.85rem; color: var(--text-secondary); }
-        .confidence-badge { text-align: center; padding: 8px 16px; background: var(--accent); border-radius: var(--radius-xs); color: white; }
-        .confidence-badge .value { font-size: 1.3rem; font-weight: 700; }
-        .confidence-badge .label { font-size: 0.65rem; opacity: 0.9; }
+        .matched-info h3 { font-size: 1rem; font-weight: 600; }
+        .matched-info p { font-size: 0.75rem; color: var(--text-secondary); }
+        .confidence-badge { text-align: center; padding: 6px 12px; background: var(--success); border-radius: var(--radius-xs); color: white; }
+        .confidence-badge .value { font-size: 1.1rem; font-weight: 700; }
+        .confidence-badge .label { font-size: 0.6rem; }
 
-        /* Action Buttons - Inside main-card */
-        .action-section-inner { padding: 24px; display: flex; flex-direction: column; gap: 14px; border-top: 1px solid var(--border); }
-        .action-btn {
-            padding: 20px 16px; border: none; border-radius: var(--radius-sm); font-family: 'Kanit';
-            font-size: 1.15rem; font-weight: 600; cursor: pointer; transition: all 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 12px; color: white;
-            width: 100%; position: relative;
-        }
-        .action-btn [data-lucide], .action-btn svg { width: 26px; height: 26px; }
-        .action-btn.checkin { background: linear-gradient(135deg, #10B981, #059669); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); }
-        .action-btn.checkout { background: linear-gradient(135deg, #EF4444, #DC2626); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4); }
-        .action-btn:hover:not(:disabled) { transform: translateY(-3px); }
-        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .action-inner { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); }
+        .action-btn { padding: 16px; border: none; border-radius: var(--radius-sm); font-family: 'Kanit'; font-size: 1.05rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; color: white; transition: all 0.2s; }
+        .action-btn [data-lucide] { width: 22px; height: 22px; }
+        .action-btn.checkin { background: linear-gradient(135deg, var(--success), #238B7E); }
+        .action-btn.checkout { background: linear-gradient(135deg, var(--danger), #C62F3A); }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .action-btn:hover:not(:disabled) { transform: translateY(-2px); }
 
-        .modal-overlay {
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px);
-            display: flex; align-items: center; justify-content: center; z-index: 1000;
-            opacity: 0; visibility: hidden; transition: all 0.3s; padding: 20px;
-        }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,76,117,0.7); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s; padding: 20px; }
         .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal { background: var(--surface); border-radius: var(--radius-lg); padding: 36px; max-width: 420px; width: 100%; transform: scale(0.9); transition: all 0.3s; position: relative; }
+        .modal { background: var(--surface); border-radius: 20px; padding: 28px; max-width: 380px; width: 100%; transform: scale(0.9); transition: all 0.3s; position: relative; }
         .modal-overlay.active .modal { transform: scale(1); }
-        .modal-close { position: absolute; top: 20px; right: 20px; width: 36px; height: 36px; background: var(--surface-3); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .modal-close:hover { background: var(--danger-light); color: var(--danger); }
-        .modal-close [data-lucide] { width: 18px; height: 18px; }
-        .modal-icon { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
-        .modal-icon.success { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); color: var(--accent); }
-        .modal-icon.error { background: linear-gradient(135deg, #FEE2E2, #FECACA); color: var(--danger); }
-        .modal-icon.warning { background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: var(--warning); }
-        .modal-icon.login { background: linear-gradient(135deg, #E2E8F0, #CBD5E1); color: var(--primary); }
-        .modal-icon [data-lucide] { width: 40px; height: 40px; }
-        .modal-title { font-size: 1.4rem; font-weight: 600; text-align: center; margin-bottom: 8px; }
-        .modal-message { text-align: center; color: var(--text-secondary); margin-bottom: 28px; line-height: 1.6; white-space: pre-line; }
+        .modal-close { position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; background: var(--surface-2); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .modal-close [data-lucide] { width: 16px; height: 16px; }
+        .modal-icon { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+        .modal-icon.success { background: var(--success-light); color: var(--success); }
+        .modal-icon.error { background: var(--danger-light); color: var(--danger); }
+        .modal-icon.warning { background: var(--warning-light); color: var(--warning); }
+        .modal-icon.login { background: var(--surface-2); color: var(--primary); }
+        .modal-icon [data-lucide] { width: 32px; height: 32px; }
+        .modal-title { font-size: 1.2rem; font-weight: 600; text-align: center; margin-bottom: 8px; }
+        .modal-message { text-align: center; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5; white-space: pre-line; font-size: 0.9rem; }
 
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; font-weight: 500; margin-bottom: 8px; font-size: 0.9rem; }
-        .form-input { width: 100%; padding: 14px 18px; border: 2px solid var(--border); border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 1rem; transition: all 0.2s; }
-        .form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
-        .form-input:disabled { background: var(--surface-2); color: var(--text-secondary); }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-secondary); }
+        .form-input { width: 100%; padding: 11px 14px; border: 2px solid var(--border); border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.9rem; transition: all 0.2s; }
+        .form-input:focus { outline: none; border-color: var(--accent); }
+        .form-input:disabled { background: var(--surface-2); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-        .btn { padding: 14px 28px; border: none; border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
-        .btn [data-lucide], .btn svg { width: 20px; height: 20px; }
-        .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: white; width: 100%; }
-        .btn-primary:hover { transform: translateY(-2px); }
-        .btn-secondary { background: var(--surface-3); color: var(--text); }
-        .btn-sm { padding: 10px 18px; font-size: 0.9rem; }
+        .btn { padding: 11px 20px; border: none; border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.9rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
+        .btn [data-lucide] { width: 18px; height: 18px; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent), #0096B4); color: white; width: 100%; }
+        .btn-primary:hover { transform: translateY(-1px); }
+        .btn-secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+        .btn-sm { padding: 9px 14px; font-size: 0.85rem; }
+        .btn-icon { width: 34px; height: 34px; padding: 0; border-radius: var(--radius-xs); }
 
-        .admin-page { background: var(--surface-2); }
-        .admin-header { background: var(--gradient-main); color: white; padding: 20px 24px; position: sticky; top: 0; z-index: 100; }
-        .admin-header-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-        .admin-title { display: flex; align-items: center; gap: 12px; }
-        .admin-title [data-lucide] { width: 28px; height: 28px; }
-        .admin-title h1 { font-size: 1.2rem; font-weight: 600; }
-        .admin-nav { display: flex; gap: 10px; }
-        .nav-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 10px 18px; border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s; }
-        .nav-btn:hover { background: rgba(255,255,255,0.2); }
-        .nav-btn [data-lucide] { width: 18px; height: 18px; }
-        .admin-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .admin-page { background: linear-gradient(180deg, #E1EEF4 0%, #F0F7FA 100%); min-height: 100vh; }
+        .admin-header { background: linear-gradient(135deg, #0F4C75, #1B6CA8); color: white; padding: 14px 20px; position: sticky; top: 0; z-index: 100; }
+        .admin-header-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .admin-title { display: flex; align-items: center; gap: 10px; }
+        .admin-title [data-lucide] { width: 22px; height: 22px; }
+        .admin-title h1 { font-size: 1.05rem; font-weight: 600; }
+        .admin-nav { display: flex; gap: 8px; }
+        .nav-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .nav-btn:hover { background: rgba(255,255,255,0.25); }
+        .nav-btn [data-lucide] { width: 15px; height: 15px; }
+        .admin-container { max-width: 1100px; margin: 0 auto; padding: 20px; }
 
-        .tabs-container { background: var(--surface); border-radius: var(--radius); padding: 8px; margin-bottom: 24px; display: flex; gap: 6px; }
-        .tab-btn { flex: 1; padding: 14px 20px; border: none; background: transparent; border-radius: var(--radius-sm); font-family: 'Kanit'; font-size: 0.95rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .tab-btn:hover { color: var(--text); background: var(--surface-2); }
-        .tab-btn.active { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: white; }
-        .tab-btn [data-lucide] { width: 20px; height: 20px; }
+        .tabs { background: var(--surface); border-radius: var(--radius); padding: 5px; margin-bottom: 20px; display: flex; gap: 4px; box-shadow: var(--shadow); flex-wrap: wrap; }
+        .tab-btn { flex: 1; min-width: 120px; padding: 10px 14px; border: none; background: transparent; border-radius: var(--radius-sm); font-family: 'Kanit'; font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
+        .tab-btn:hover { background: var(--surface-2); color: var(--text); }
+        .tab-btn.active { background: var(--accent); color: white; }
+        .tab-btn [data-lucide] { width: 16px; height: 16px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
         .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-        .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .card-header h2 { font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
-        .card-header [data-lucide] { width: 22px; height: 22px; color: var(--accent); }
-        .card-body { padding: 24px; }
+        .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+        .card-header h2 { font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+        .card-header [data-lucide] { width: 18px; height: 18px; color: var(--accent); }
+        .card-body { padding: 18px; }
 
-        .employee-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-        .employee-card { display: flex; align-items: center; padding: 18px; background: var(--surface-2); border-radius: var(--radius-sm); gap: 16px; transition: all 0.3s; }
-        .employee-card:hover { background: var(--surface-3); transform: translateY(-2px); }
-        .emp-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem; flex-shrink: 0; }
-        .emp-info { flex: 1; min-width: 0; }
-        .emp-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 500; margin-bottom: 6px; }
-        .emp-badge.registered { background: var(--accent-light); color: #065F46; }
-        .emp-badge.not-registered { background: var(--warning-light); color: #92400E; }
-        .emp-badge [data-lucide] { width: 12px; height: 12px; }
-        .emp-info h4 { font-size: 1rem; font-weight: 600; margin-bottom: 2px; }
-        .emp-info p { font-size: 0.8rem; color: var(--text-secondary); }
-        .emp-actions { display: flex; gap: 8px; }
-        .icon-btn { width: 40px; height: 40px; border: none; border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; }
-        .icon-btn [data-lucide] { width: 20px; height: 20px; }
-        .icon-btn.primary { background: var(--accent-light); color: var(--accent); }
-        .icon-btn.primary:hover { background: var(--accent); color: white; }
-        .icon-btn.danger { background: var(--danger-light); color: var(--danger); }
-        .icon-btn.danger:hover { background: var(--danger); color: white; }
-
-        .face-reg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-        @media (max-width: 800px) { .face-reg-grid { grid-template-columns: 1fr; } }
-        .camera-preview { aspect-ratio: 4/3; background: var(--primary); border-radius: var(--radius-sm); overflow: hidden; position: relative; }
-        .camera-preview video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        .camera-preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
-        .face-status { padding: 14px; border-radius: var(--radius-xs); text-align: center; font-weight: 500; margin: 16px 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .face-status [data-lucide] { width: 20px; height: 20px; }
-        .face-status.detecting { background: var(--warning-light); color: #92400E; }
-        .face-status.detected { background: var(--accent-light); color: #065F46; }
-        .instructions { background: linear-gradient(135deg, #E0F2FE, #BAE6FD); border-radius: var(--radius-sm); padding: 20px; margin-bottom: 24px; }
-        .instructions h4 { font-size: 0.95rem; font-weight: 600; color: #0369A1; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .instructions [data-lucide] { width: 20px; height: 20px; }
-        .instructions ul { list-style: none; font-size: 0.85rem; color: #0369A1; }
-        .instructions li { padding: 5px 0 5px 28px; position: relative; }
-        .instructions li::before { content: '✓'; position: absolute; left: 0; color: var(--accent); font-weight: bold; }
-        .selected-emp { display: flex; align-items: center; gap: 14px; padding: 18px; background: var(--surface-2); border-radius: var(--radius-sm); margin-bottom: 16px; }
-        .selected-emp .avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem; }
-        .selected-emp .info h4 { font-size: 1rem; font-weight: 600; }
-        .selected-emp .info p { font-size: 0.85rem; color: var(--text-secondary); }
-
-        .search-box { position: relative; margin-bottom: 20px; }
-        .search-box input { width: 100%; max-width: 360px; padding: 14px 18px 14px 48px; border: 2px solid var(--border); border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.95rem; }
-        .search-box input:focus { outline: none; border-color: var(--accent); }
-        .search-box [data-lucide] { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--text-muted); }
-
-        /* Stats cards - NO colored bar */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 28px; }
-        .stat-card { background: var(--surface); border-radius: var(--radius-sm); padding: 24px; box-shadow: var(--shadow); transition: all 0.3s; }
-        .stat-card:hover { transform: translateY(-3px); }
-        .stat-icon { width: 52px; height: 52px; border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
-        .stat-card.primary .stat-icon { background: #E2E8F0; color: var(--primary); }
-        .stat-card.success .stat-icon { background: var(--accent-light); color: var(--accent); }
-        .stat-card.danger .stat-icon { background: var(--danger-light); color: var(--danger); }
-        .stat-card.info .stat-icon { background: var(--info-light); color: var(--info); }
-        .stat-icon [data-lucide] { width: 26px; height: 26px; }
-        .stat-value { font-size: 2.5rem; font-weight: 700; line-height: 1; margin-bottom: 6px; }
-        .stat-label { font-size: 0.9rem; color: var(--text-secondary); }
-
-        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-bottom: 24px; }
-        @media (max-width: 500px) { .charts-grid { grid-template-columns: 1fr; } }
-        .chart-container { position: relative; height: 300px; }
-
-        .table-container { overflow-x: auto; }
+        .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 16px 18px; text-align: left; }
-        th { background: var(--surface-2); font-weight: 500; font-size: 0.85rem; color: var(--text-secondary); border-bottom: 2px solid var(--border); }
-        td { border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
+        th, td { padding: 10px 12px; text-align: left; }
+        th { background: var(--surface-2); font-weight: 500; font-size: 0.8rem; color: var(--text-secondary); border-bottom: 2px solid var(--border); white-space: nowrap; }
+        td { border-bottom: 1px solid var(--border); font-size: 0.85rem; }
         tr:hover td { background: var(--surface-2); }
-        .status-badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; }
-        .status-badge.normal { background: var(--accent-light); color: #065F46; }
-        .status-badge.late { background: var(--danger-light); color: #991B1B; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
+        .badge.success { background: var(--success-light); color: var(--success); }
+        .badge.danger { background: var(--danger-light); color: var(--danger); }
+        .badge.warning { background: var(--warning-light); color: var(--warning); }
 
-        .photo-thumb { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; cursor: pointer; transition: transform 0.2s; border: 2px solid var(--border); }
-        .photo-thumb:hover { transform: scale(1.1); box-shadow: var(--shadow-lg); }
+        .photo-thumb { width: 40px; height: 40px; border-radius: var(--radius-xs); object-fit: cover; cursor: pointer; border: 2px solid var(--border); }
+        .emp-cell { display: flex; align-items: center; gap: 10px; }
+        .emp-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.85rem; }
+        .emp-name { font-weight: 500; }
+        .emp-id { font-size: 0.7rem; color: var(--text-muted); }
+        .action-btns { display: flex; gap: 5px; }
+        .action-btns .btn-icon { background: var(--surface-2); color: var(--text-secondary); border: 1px solid var(--border); }
+        .action-btns .btn-icon:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+        .action-btns .btn-icon.danger:hover { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
 
-        tr.late-row { background: #FEF2F2 !important; }
-        tr.late-row:hover td { background: #FEE2E2 !important; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+        .stat-card { background: var(--surface); border-radius: var(--radius-sm); padding: 16px; box-shadow: var(--shadow); }
+        .stat-icon { width: 40px; height: 40px; border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+        .stat-card.primary .stat-icon { background: var(--surface-2); color: var(--primary); }
+        .stat-card.success .stat-icon { background: var(--success-light); color: var(--success); }
+        .stat-card.danger .stat-icon { background: var(--danger-light); color: var(--danger); }
+        .stat-card.info .stat-icon { background: var(--accent-light); color: var(--accent); }
+        .stat-icon [data-lucide] { width: 20px; height: 20px; }
+        .stat-value { font-size: 1.8rem; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+        .stat-label { font-size: 0.8rem; color: var(--text-secondary); }
 
-        .date-filter { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-        .date-filter input[type="date"] { padding: 12px 16px; border: 2px solid var(--border); border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.9rem; }
+        .filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .filter-row label { font-weight: 500; font-size: 0.85rem; color: var(--text-secondary); }
+        .filter-row input[type="date"] { padding: 9px 12px; border: 2px solid var(--border); border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.85rem; height: 40px; }
+        .filter-row .btn { height: 40px; }
 
-        /* Pagination */
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 20px; }
-        .pagination button { width: 40px; height: 40px; border: 2px solid var(--border); background: var(--surface); border-radius: var(--radius-xs); cursor: pointer; font-family: 'Kanit'; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 18px; }
+        .chart-box { height: 260px; position: relative; }
+
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 5px; padding: 14px; }
+        .pagination button { width: 34px; height: 34px; border: 2px solid var(--border); background: var(--surface); border-radius: var(--radius-xs); cursor: pointer; font-family: 'Kanit'; font-weight: 500; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
         .pagination button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
         .pagination button.active { background: var(--accent); border-color: var(--accent); color: white; }
         .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .pagination [data-lucide] { width: 18px; height: 18px; }
-        .pagination-info { font-size: 0.85rem; color: var(--text-secondary); margin: 0 12px; }
+        .pagination [data-lucide] { width: 14px; height: 14px; }
+        .pagination-info { font-size: 0.75rem; color: var(--text-muted); margin: 0 8px; }
 
-        .empty-state { text-align: center; padding: 60px 24px; color: var(--text-secondary); }
-        .empty-state [data-lucide] { width: 56px; height: 56px; margin-bottom: 20px; opacity: 0.4; }
+        .search-box { position: relative; margin-bottom: 14px; }
+        .search-box input { width: 100%; max-width: 280px; padding: 9px 12px 9px 36px; border: 2px solid var(--border); border-radius: var(--radius-xs); font-family: 'Kanit'; font-size: 0.85rem; }
+        .search-box input:focus { outline: none; border-color: var(--accent); }
+        .search-box [data-lucide] { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted); }
 
-        @media (max-width: 600px) {
-            .admin-header-inner { flex-direction: column; gap: 16px; }
-            .tabs-container { flex-wrap: wrap; }
-            .tab-btn { flex: 1 1 45%; }
-            .shift-grid { grid-template-columns: 1fr; }
-            .att-header { flex-direction: column; gap: 16px; align-items: flex-start; }
-            .login-btn { width: 100%; justify-content: center; }
+        .face-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .cam-preview { aspect-ratio: 4/3; background: #1a1a2e; border-radius: var(--radius-sm); overflow: hidden; position: relative; }
+        .cam-preview video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .cam-preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+        .face-status { padding: 10px; border-radius: var(--radius-xs); text-align: center; font-weight: 500; font-size: 0.85rem; margin: 12px 0; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .face-status [data-lucide] { width: 16px; height: 16px; }
+        .face-status.detecting { background: var(--warning-light); color: var(--warning); }
+        .face-status.detected { background: var(--success-light); color: var(--success); }
+        .instructions { background: var(--accent-light); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 18px; }
+        .instructions h4 { font-size: 0.85rem; font-weight: 600; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .instructions [data-lucide] { width: 16px; height: 16px; }
+        .instructions ul { list-style: none; font-size: 0.8rem; color: var(--primary); }
+        .instructions li { padding: 3px 0 3px 20px; position: relative; }
+        .instructions li::before { content: '✓'; position: absolute; left: 0; color: var(--success); }
+        .selected-emp { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--surface-2); border-radius: var(--radius-sm); margin-bottom: 12px; }
+        .selected-emp .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1rem; }
+        .selected-emp .info h4 { font-size: 0.9rem; font-weight: 600; }
+        .selected-emp .info p { font-size: 0.75rem; color: var(--text-secondary); }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); }
+        .empty-state [data-lucide] { width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.4; }
+        .late-row { background: var(--danger-light) !important; }
+        .late-row:hover td { background: #FECDD3 !important; }
+
+        @media (max-width: 768px) {
+            .face-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .admin-header-inner { flex-direction: column; }
+            .filter-row { flex-direction: column; align-items: stretch; }
+            .filter-row .btn { width: 100%; }
         }
     </style>
 </head>
 <body>
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loader-ring"></div>
-        <div class="loading-text" id="loadingText">กำลังโหลด Face Recognition...</div>
-        <div class="progress-container">
-            <div class="progress-fill" id="loadingProgress" style="width: 0%"></div>
-        </div>
+        <div class="loading-text" id="loadingText">กำลังโหลด...</div>
+        <div class="progress-bar"><div class="progress-fill" id="loadingProgress" style="width:0%"></div></div>
     </div>
 
     <!-- ATTENDANCE PAGE -->
-    <div class="page attendance-page active" id="pageAttendance">
+    <div class="page att-page active" id="pageAttendance">
         <div class="att-container">
             <header class="att-header">
                 <div class="att-logo">
-                    <div class="icon-wrapper"><i data-lucide="scan-face"></i></div>
+                    <div class="icon"><i data-lucide="scan-face"></i></div>
                     <h1>ลงเวลาทำงาน</h1>
                 </div>
-                <button class="login-btn" onclick="showLoginModal()">
-                    <i data-lucide="shield"></i><span>Admin</span>
-                </button>
+                <button class="login-btn" onclick="showLoginModal()"><i data-lucide="shield"></i><span>Admin</span></button>
             </header>
 
             <div class="main-card">
                 <div class="time-section">
                     <div class="time-display" id="currentTime">00:00:00</div>
-                    <div class="date-display" id="currentDate">วันจันทร์ที่ 1 มกราคม 2568</div>
+                    <div class="date-display" id="currentDate">-</div>
                 </div>
 
-                <div class="status-grid" style="grid-template-columns: 1fr;">
-                    <div class="status-card face" id="faceStatus">
-                        <i data-lucide="scan-face"></i>
-                        <span>รอตรวจจับใบหน้า</span>
-                    </div>
+                <div class="status-section">
+                    <div class="status-card" id="faceStatus"><i data-lucide="scan-face"></i><span>รอตรวจจับใบหน้า</span></div>
                 </div>
 
                 <div class="shift-section">
-                    <div class="section-label">
-                        <i data-lucide="clock"></i><span>เลือกผลัดการทำงาน</span>
-                    </div>
+                    <div class="section-label"><i data-lucide="clock"></i><span>เลือกผลัดการทำงาน</span></div>
                     <div class="shift-grid">
-                        <button class="shift-btn" data-shift="morning">
-                            <div class="name">ผลัดเช้า</div>
-                            <div class="time">06:00 - 14:00</div>
-                        </button>
-                        <button class="shift-btn" data-shift="afternoon">
-                            <div class="name">ผลัดบ่าย</div>
-                            <div class="time">14:00 - 22:00</div>
-                        </button>
-                        <button class="shift-btn" data-shift="daywork">
-                            <div class="name">Daywork</div>
-                            <div class="time">08:30 - 16:30</div>
-                        </button>
+                        <button class="shift-btn" data-shift="morning"><div class="name">ผลัดเช้า</div><div class="time">06:00-14:00</div></button>
+                        <button class="shift-btn" data-shift="afternoon"><div class="name">ผลัดบ่าย</div><div class="time">14:00-22:00</div></button>
+                        <button class="shift-btn" data-shift="daywork"><div class="name">Daywork</div><div class="time">08:30-16:30</div></button>
                     </div>
                 </div>
 
@@ -367,33 +271,19 @@
                     <div class="camera-wrapper">
                         <video id="video" autoplay playsinline muted></video>
                         <canvas id="overlayCanvas"></canvas>
-                        <div class="camera-placeholder" id="cameraPlaceholder">
-                            <i data-lucide="camera"></i>
-                            <p>กำลังเปิดกล้อง...</p>
-                        </div>
+                        <div class="camera-placeholder" id="cameraPlaceholder"><i data-lucide="camera"></i><p>กำลังเปิดกล้อง...</p></div>
                     </div>
                 </div>
 
                 <div class="matched-section hidden" id="matchedSection">
                     <div class="matched-avatar" id="matchedAvatar">-</div>
-                    <div class="matched-info">
-                        <h3 id="matchedName">-</h3>
-                        <p id="matchedPosition">-</p>
-                    </div>
-                    <div class="confidence-badge">
-                        <div class="value" id="matchConfidence">0%</div>
-                        <div class="label">ความแม่นยำ</div>
-                    </div>
+                    <div class="matched-info"><h3 id="matchedName">-</h3><p id="matchedPosition">-</p></div>
+                    <div class="confidence-badge"><div class="value" id="matchConfidence">0%</div><div class="label">ความแม่นยำ</div></div>
                 </div>
 
-                <!-- Action Buttons inside main-card -->
-                <div class="action-section-inner">
-                    <button class="action-btn checkin" id="btnCheckIn" disabled>
-                        <i data-lucide="log-in"></i><span>เข้างาน</span>
-                    </button>
-                    <button class="action-btn checkout" id="btnCheckOut" disabled>
-                        <i data-lucide="log-out"></i><span>ออกงาน</span>
-                    </button>
+                <div class="action-inner">
+                    <button class="action-btn checkin" id="btnCheckIn" disabled><i data-lucide="log-in"></i><span>เข้างาน</span></button>
+                    <button class="action-btn checkout" id="btnCheckOut" disabled><i data-lucide="log-out"></i><span>ออกงาน</span></button>
                 </div>
             </div>
         </div>
@@ -403,34 +293,29 @@
     <div class="page admin-page" id="pageAdmin">
         <header class="admin-header">
             <div class="admin-header-inner">
-                <div class="admin-title">
-                    <i data-lucide="settings-2"></i><h1>ระบบจัดการ</h1>
-                </div>
+                <div class="admin-title"><i data-lucide="settings-2"></i><h1>ระบบจัดการ</h1></div>
                 <nav class="admin-nav">
-                    <button class="nav-btn" onclick="showPage('pageAttendance')"><i data-lucide="clock"></i> ลงเวลา</button>
-                    <button class="nav-btn" onclick="showPage('pageDashboard')"><i data-lucide="bar-chart-3"></i> Dashboard</button>
-                    <button class="nav-btn" onclick="logout()"><i data-lucide="log-out"></i> ออก</button>
+                    <button class="nav-btn" onclick="showPage('pageAttendance')"><i data-lucide="clock"></i>ลงเวลา</button>
+                    <button class="nav-btn" onclick="showPage('pageDashboard')"><i data-lucide="bar-chart-3"></i>Dashboard</button>
+                    <button class="nav-btn" onclick="logout()"><i data-lucide="log-out"></i>ออก</button>
                 </nav>
             </div>
         </header>
-
         <div class="admin-container">
-            <div class="tabs-container">
-                <button class="tab-btn active" data-tab="employees"><i data-lucide="users"></i> รายชื่อพนักงาน</button>
-                <button class="tab-btn" data-tab="add-employee"><i data-lucide="user-plus"></i> เพิ่มพนักงาน</button>
-                <button class="tab-btn" data-tab="register-face"><i data-lucide="scan-face"></i> ลงทะเบียนใบหน้า</button>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="employees"><i data-lucide="users"></i>รายชื่อพนักงาน</button>
+                <button class="tab-btn" data-tab="add-employee"><i data-lucide="user-plus"></i>เพิ่มพนักงาน</button>
+                <button class="tab-btn" data-tab="register-face"><i data-lucide="scan-face"></i>ลงทะเบียนใบหน้า</button>
             </div>
 
             <div class="tab-content active" id="tab-employees">
                 <div class="card">
-                    <div class="card-header"><h2><i data-lucide="users"></i> รายชื่อพนักงานทั้งหมด</h2></div>
+                    <div class="card-header"><h2><i data-lucide="users"></i>รายชื่อพนักงานทั้งหมด</h2></div>
                     <div class="card-body">
-                        <div class="search-box">
-                            <i data-lucide="search"></i>
-                            <input type="text" id="searchEmployee" placeholder="ค้นหาพนักงาน..." onkeyup="filterEmployees()">
-                        </div>
-                        <div class="employee-grid" id="employeeList">
-                            <div class="empty-state"><i data-lucide="users"></i><p>กำลังโหลดข้อมูล...</p></div>
+                        <div class="search-box"><i data-lucide="search"></i><input type="text" id="searchEmployee" placeholder="ค้นหาพนักงาน..." onkeyup="filterEmployees()"></div>
+                        <div class="table-wrap">
+                            <table><thead><tr><th>พนักงาน</th><th>ตำแหน่ง</th><th>กลุ่ม</th><th>สถานะใบหน้า</th><th>จัดการ</th></tr></thead>
+                            <tbody id="employeeTableBody"><tr><td colspan="5" class="empty-state">กำลังโหลด...</td></tr></tbody></table>
                         </div>
                     </div>
                 </div>
@@ -438,32 +323,18 @@
 
             <div class="tab-content" id="tab-add-employee">
                 <div class="card">
-                    <div class="card-header"><h2><i data-lucide="user-plus"></i> เพิ่มพนักงานใหม่</h2></div>
+                    <div class="card-header"><h2><i data-lucide="user-plus"></i>เพิ่มพนักงานใหม่</h2></div>
                     <div class="card-body">
                         <form id="addEmployeeForm">
                             <div class="form-row">
-                                <div class="form-group">
-                                    <label>รหัสพนักงาน (Auto)</label>
-                                    <input type="text" class="form-input" id="newEmpId" placeholder="รอโหลด..." disabled required>
-                                </div>
-                                <div class="form-group">
-                                    <label>ชื่อ-สกุล</label>
-                                    <input type="text" class="form-input" id="newEmpName" placeholder="ชื่อ นามสกุล" required>
-                                </div>
+                                <div class="form-group"><label>รหัสพนักงาน (Auto)</label><input type="text" class="form-input" id="newEmpId" disabled required></div>
+                                <div class="form-group"><label>ชื่อ-สกุล</label><input type="text" class="form-input" id="newEmpName" required></div>
                             </div>
                             <div class="form-row">
-                                <div class="form-group">
-                                    <label>ตำแหน่ง</label>
-                                    <input type="text" class="form-input" id="newEmpPosition" placeholder="เช่น พนักงานผลิต" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>แผนก</label>
-                                    <input type="text" class="form-input" id="newEmpDepartment" placeholder="เช่น ผลิต" required>
-                                </div>
+                                <div class="form-group"><label>ตำแหน่ง</label><input type="text" class="form-input" id="newEmpPosition"></div>
+                                <div class="form-group"><label>กลุ่ม</label><input type="text" class="form-input" id="newEmpGroup"></div>
                             </div>
-                            <button type="submit" class="btn btn-primary" style="margin-top: 12px;">
-                                <i data-lucide="plus"></i> เพิ่มพนักงาน
-                            </button>
+                            <button type="submit" class="btn btn-primary" style="margin-top:8px"><i data-lucide="plus"></i>เพิ่มพนักงาน</button>
                         </form>
                     </div>
                 </div>
@@ -471,52 +342,28 @@
 
             <div class="tab-content" id="tab-register-face">
                 <div class="card">
-                    <div class="card-header"><h2><i data-lucide="scan-face"></i> ลงทะเบียนใบหน้า</h2></div>
+                    <div class="card-header"><h2><i data-lucide="scan-face"></i>ลงทะเบียนใบหน้า</h2></div>
                     <div class="card-body">
-                        <div class="instructions">
-                            <h4><i data-lucide="info"></i> วิธีลงทะเบียนใบหน้า</h4>
-                            <ul>
-                                <li>เลือกพนักงานที่ต้องการลงทะเบียน</li>
-                                <li>หันหน้าตรงเข้ากล้อง มีแสงสว่างเพียงพอ</li>
-                                <li>รอให้ระบบตรวจจับใบหน้า (กรอบสีเขียว)</li>
-                                <li>กดปุ่ม "บันทึกใบหน้า"</li>
-                            </ul>
-                        </div>
-                        <div class="face-reg-grid">
+                        <div class="instructions"><h4><i data-lucide="info"></i>วิธีลงทะเบียน</h4><ul><li>เลือกพนักงาน</li><li>หันหน้าตรงเข้ากล้อง</li><li>รอกรอบสีเขียว</li><li>กดบันทึก</li></ul></div>
+                        <div class="face-grid">
                             <div>
                                 <div class="section-label"><i data-lucide="camera"></i><span>กล้อง</span></div>
-                                <div class="camera-preview">
+                                <div class="cam-preview">
                                     <video id="regVideo" autoplay playsinline muted></video>
                                     <canvas id="regCanvas"></canvas>
-                                    <div class="camera-placeholder" id="regPlaceholder">
-                                        <i data-lucide="camera"></i><p>กรุณาเลือกพนักงาน</p>
-                                    </div>
+                                    <div class="camera-placeholder" id="regPlaceholder"><i data-lucide="camera"></i><p>เลือกพนักงาน</p></div>
                                 </div>
-                                <div class="face-status detecting" id="regFaceStatus">
-                                    <i data-lucide="scan-face"></i><span>รอตรวจจับใบหน้า...</span>
-                                </div>
-                                <button class="btn btn-primary" id="btnSaveFace" disabled style="width: 100%;">
-                                    <i data-lucide="save"></i> บันทึกใบหน้า
-                                </button>
+                                <div class="face-status detecting" id="regFaceStatus"><i data-lucide="scan-face"></i><span>รอตรวจจับ...</span></div>
+                                <button class="btn btn-primary" id="btnSaveFace" disabled style="width:100%"><i data-lucide="save"></i>บันทึกใบหน้า</button>
                             </div>
                             <div>
                                 <div class="section-label"><i data-lucide="user"></i><span>เลือกพนักงาน</span></div>
-                                <div class="form-group">
-                                    <select class="form-input" id="regEmployeeSelect">
-                                        <option value="">-- เลือกพนักงาน --</option>
-                                    </select>
-                                </div>
+                                <div class="form-group"><select class="form-input" id="regEmployeeSelect"><option value="">-- เลือกพนักงาน --</option></select></div>
                                 <div class="selected-emp hidden" id="selectedEmployee">
                                     <div class="avatar" id="selectedAvatar">-</div>
-                                    <div class="info">
-                                        <h4 id="selectedName">-</h4>
-                                        <p id="selectedPosition">-</p>
-                                    </div>
+                                    <div class="info"><h4 id="selectedName">-</h4><p id="selectedPosition">-</p></div>
                                 </div>
-                                <div id="currentFaceStatus" class="hidden" style="margin-top: 16px;">
-                                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 8px;">สถานะปัจจุบัน:</p>
-                                    <div id="faceRegistrationStatus"></div>
-                                </div>
+                                <div id="currentFaceStatus" class="hidden" style="margin-top:12px"><p style="color:var(--text-secondary);font-size:0.8rem;margin-bottom:4px">สถานะ:</p><div id="faceRegistrationStatus"></div></div>
                             </div>
                         </div>
                     </div>
@@ -531,1136 +378,274 @@
             <div class="admin-header-inner">
                 <div class="admin-title"><i data-lucide="bar-chart-3"></i><h1>Dashboard</h1></div>
                 <nav class="admin-nav">
-                    <button class="nav-btn" onclick="showPage('pageAttendance')"><i data-lucide="clock"></i> ลงเวลา</button>
-                    <button class="nav-btn" onclick="showPage('pageAdmin')"><i data-lucide="settings-2"></i> จัดการ</button>
-                    <button class="nav-btn" onclick="logout()"><i data-lucide="log-out"></i> ออก</button>
+                    <button class="nav-btn" onclick="showPage('pageAttendance')"><i data-lucide="clock"></i>ลงเวลา</button>
+                    <button class="nav-btn" onclick="showPage('pageAdmin')"><i data-lucide="settings-2"></i>จัดการ</button>
+                    <button class="nav-btn" onclick="logout()"><i data-lucide="log-out"></i>ออก</button>
                 </nav>
             </div>
         </header>
-
         <div class="admin-container">
-            <div class="card" style="margin-bottom: 24px;">
+            <div class="card" style="margin-bottom:18px">
                 <div class="card-body">
-                    <div class="date-filter">
-                        <label style="font-weight: 500;">เลือกวันที่:</label>
+                    <div class="filter-row">
+                        <label>เลือกวันที่:</label>
                         <input type="date" id="dashboardDate">
-                        <button class="btn btn-primary btn-sm" onclick="loadDashboard()"><i data-lucide="search"></i> ดูข้อมูล</button>
-                        <button class="btn btn-secondary btn-sm" onclick="setToday()"><i data-lucide="calendar"></i> วันนี้</button>
+                        <button class="btn btn-secondary btn-sm" onclick="setToday()" id="btnToday"><i data-lucide="calendar"></i>วันนี้</button>
+                        <button class="btn btn-primary btn-sm" onclick="loadDashboard()" id="btnLoadDash"><i data-lucide="search"></i>ดูข้อมูล</button>
                     </div>
                 </div>
             </div>
-
             <div class="stats-grid">
                 <div class="stat-card primary"><div class="stat-icon"><i data-lucide="users"></i></div><div class="stat-value" id="statTotal">-</div><div class="stat-label">พนักงานทั้งหมด</div></div>
                 <div class="stat-card success"><div class="stat-icon"><i data-lucide="log-in"></i></div><div class="stat-value" id="statCheckins">-</div><div class="stat-label">เข้างานแล้ว</div></div>
                 <div class="stat-card info"><div class="stat-icon"><i data-lucide="log-out"></i></div><div class="stat-value" id="statCheckouts">-</div><div class="stat-label">ออกงานแล้ว</div></div>
                 <div class="stat-card danger"><div class="stat-icon"><i data-lucide="alarm-clock"></i></div><div class="stat-value" id="statLate">-</div><div class="stat-label">มาสาย</div></div>
             </div>
-
             <div class="charts-grid">
-                <div class="card">
-                    <div class="card-header"><h2><i data-lucide="pie-chart"></i> สถิติตามผลัด</h2></div>
-                    <div class="card-body"><div class="chart-container"><canvas id="shiftChart"></canvas></div></div>
-                </div>
-                <div class="card">
-                    <div class="card-header"><h2><i data-lucide="bar-chart-2"></i> สถานะการเข้างาน</h2></div>
-                    <div class="card-body"><div class="chart-container"><canvas id="statusChart"></canvas></div></div>
-                </div>
+                <div class="card"><div class="card-header"><h2><i data-lucide="pie-chart"></i>สถิติตามผลัด</h2></div><div class="card-body"><div class="chart-box"><canvas id="shiftChart"></canvas></div></div></div>
+                <div class="card"><div class="card-header"><h2><i data-lucide="bar-chart-2"></i>สถานะการเข้างาน</h2></div><div class="card-body"><div class="chart-box"><canvas id="statusChart"></canvas></div></div></div>
             </div>
-
             <div class="card">
-                <div class="card-header"><h2><i data-lucide="list"></i> รายละเอียดการลงเวลา</h2></div>
-                <div class="table-container">
-                    <table>
-                        <thead><tr><th>พนักงาน</th><th>ผลัด</th><th>เข้างาน</th><th>รูปเข้า</th><th>ออกงาน</th><th>รูปออก</th><th>สถานะ</th></tr></thead>
-                        <tbody id="dashboardTable"><tr><td colspan="7" class="empty-state"><p>เลือกวันที่เพื่อดูข้อมูล</p></td></tr></tbody>
-                    </table>
+                <div class="card-header"><h2><i data-lucide="list"></i>รายละเอียดการลงเวลา</h2></div>
+                <div class="table-wrap">
+                    <table><thead><tr><th>พนักงาน</th><th>ผลัด</th><th>เข้างาน</th><th>รูปเข้า</th><th>ออกงาน</th><th>รูปออก</th><th>สถานะ</th></tr></thead>
+                    <tbody id="dashboardTable"><tr><td colspan="7" class="empty-state">เลือกวันที่</td></tr></tbody></table>
                 </div>
                 <div class="pagination" id="pagination"></div>
             </div>
         </div>
     </div>
 
-    <!-- LOGIN MODAL -->
+    <!-- MODALS -->
     <div class="modal-overlay" id="loginModal">
         <div class="modal">
             <button class="modal-close" onclick="closeLoginModal()"><i data-lucide="x"></i></button>
             <div class="modal-icon login"><i data-lucide="shield"></i></div>
-            <h3 class="modal-title">เข้าสู่ระบบผู้ดูแล</h3>
-            <p class="modal-message" style="margin-bottom: 24px;">กรุณากรอกข้อมูลเพื่อเข้าสู่ระบบ</p>
+            <h3 class="modal-title">เข้าสู่ระบบ</h3>
             <form id="loginForm">
-                <div class="form-group">
-                    <label>ชื่อผู้ใช้</label>
-                    <input type="text" class="form-input" id="loginUsername" placeholder="Username" required>
-                </div>
-                <div class="form-group">
-                    <label>รหัสผ่าน</label>
-                    <input type="password" class="form-input" id="loginPassword" placeholder="Password" required>
-                </div>
-                <button type="submit" class="btn btn-primary"><i data-lucide="log-in"></i> เข้าสู่ระบบ</button>
+                <div class="form-group"><label>ชื่อผู้ใช้</label><input type="text" class="form-input" id="loginUsername" required></div>
+                <div class="form-group"><label>รหัสผ่าน</label><input type="password" class="form-input" id="loginPassword" required></div>
+                <button type="submit" class="btn btn-primary"><i data-lucide="log-in"></i>เข้าสู่ระบบ</button>
             </form>
         </div>
     </div>
 
-    <!-- RESULT MODAL -->
     <div class="modal-overlay" id="resultModal">
         <div class="modal">
             <div class="modal-icon" id="resultIcon"><i data-lucide="check"></i></div>
-            <h3 class="modal-title" id="resultTitle">สำเร็จ!</h3>
-            <p class="modal-message" id="resultMessage">ดำเนินการเรียบร้อย</p>
+            <h3 class="modal-title" id="resultTitle">สำเร็จ</h3>
+            <p class="modal-message" id="resultMessage">-</p>
             <button class="btn btn-primary" onclick="closeResultModal()">ตกลง</button>
         </div>
     </div>
 
-    <!-- IMAGE PREVIEW MODAL -->
     <div class="modal-overlay" id="imageModal" onclick="closeImageModal()">
-        <div class="modal" style="max-width: 600px; padding: 20px;" onclick="event.stopPropagation()">
+        <div class="modal" style="max-width:480px;padding:14px" onclick="event.stopPropagation()">
             <button class="modal-close" onclick="closeImageModal()"><i data-lucide="x"></i></button>
-            <img id="previewImage" src="" style="width: 100%; border-radius: 12px;">
+            <img id="previewImage" src="" style="width:100%;border-radius:10px">
         </div>
     </div>
 
-    <canvas id="captureCanvas" style="display: none;"></canvas>
+    <canvas id="captureCanvas" style="display:none"></canvas>
 
     <script>
-        // ==========================================
-        // Configuration
-        // ==========================================
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzDAmSo7bKr9VsVn_gS9g3dJrpBHivVysiXRnp65fJGfWUxnRhG4bqrosLiJU2WpAFwew/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxYWBtlstAHVCofYawu4QAAaKdnqiFyty87PjWnRNpZleAvYDHEWIeMtRYzh30kQXP_/exec';
+        const FIREBASE_URL = 'https://employee-attendance-89b36-default-rtdb.asia-southeast1.firebasedatabase.app/';
         const FACE_MATCH_THRESHOLD = 0.5;
-        const DETECTION_INTERVAL = 300;
         const ITEMS_PER_PAGE = 10;
-
-        const WORK_AREA_POLYGON = [
-            { lat: 17.3861751, lng: 102.7767134 },
-            { lat: 17.3872041, lng: 102.7746347 },
-            { lat: 17.3875573, lng: 102.7748224 },
-            { lat: 17.3865079, lng: 102.7768877 }
+        const WORK_AREAS = [
+            [{lat:17.3863415,lng:102.7713302},{lat:17.3868534,lng:102.7702841},{lat:17.3873065,lng:102.7705255},{lat:17.3867894,lng:102.7715689}],
+            [{lat:17.3861777,lng:102.7767161},{lat:17.3872041,lng:102.7746373},{lat:17.3875573,lng:102.7748224},{lat:17.3865079,lng:102.7768904}],
+            [{lat:17.3848262,lng:102.7795136},{lat:17.3846239,lng:102.7793580},{lat:17.3845574,lng:102.7794948},{lat:17.3847878,lng:102.7796370}]
         ];
 
-        // ==========================================
-        // State
-        // ==========================================
-        let currentUser = null;
-        let currentLocation = null;
-        let videoStream = null;
-        let employees = [];
-        let allEmployees = [];
-        let matchedEmployee = null;
-        let faceDescriptor = null;
-        let isLiveDetected = false; // Anti-spoofing
-        let isDetecting = false;
-        let detectionInterval = null;
-        let selectedShift = null;
-        let regVideoStream = null;
-        let regDetectionInterval = null;
-        let regFaceDescriptor = null;
-        let selectedRegEmployee = null;
-        let shiftChart = null;
-        let statusChart = null;
-        
-        // Anti-spoofing: Store previous frames data
-        let prevLandmarks = null;
-        let landmarkMovementHistory = [];
-        const MOVEMENT_HISTORY_SIZE = 10;
-        const LIVENESS_THRESHOLD = 0.5; // Movement threshold for liveness
-        
-        // Pagination
-        let dashboardRecords = [];
-        let currentPage = 1;
+        let currentUser=null,currentLocation=null,videoStream=null,employees=[],allEmployees=[];
+        let matchedEmployee=null,faceDescriptor=null,isDetecting=false,detectionInterval=null,selectedShift=null;
+        let regVideoStream=null,regDetectionInterval=null,regFaceDescriptor=null,selectedRegEmployee=null;
+        let shiftChart=null,statusChart=null,dashboardRecords=[],currentPage=1;
+        const spinnerSVG=`<svg class="spinner" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`;
 
-        const spinnerSVG = `<svg class="spinner-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`;
-
-        // ==========================================
-        // Initialize
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded',async()=>{
             lucide.createIcons();
             updateDateTime();
-            setInterval(updateDateTime, 1000);
+            setInterval(updateDateTime,1000);
             restoreSession();
-            setupEventListeners();
-            await loadFaceApiModels();
-            await loadEmployeesWithFace();
+            setupEvents();
+            await loadFaceAPI();
+            await loadEmployees();
             getLocation();
             await startCamera();
-            startFaceDetection();
+            startDetection();
         });
 
-        // ==========================================
-        // Session Management
-        // ==========================================
-        function saveSession() {
-            if (currentUser) sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-            sessionStorage.setItem('currentPage', getCurrentPage());
+        function saveSession(){if(currentUser)sessionStorage.setItem('user',JSON.stringify(currentUser));sessionStorage.setItem('page',getActivePage());}
+        function restoreSession(){const u=sessionStorage.getItem('user'),p=sessionStorage.getItem('page');if(u)currentUser=JSON.parse(u);if(p&&p!=='pageAttendance'&&currentUser)showPage(p,false);}
+        function getActivePage(){for(const id of['pageAttendance','pageAdmin','pageDashboard'])if(document.getElementById(id).classList.contains('active'))return id;return'pageAttendance';}
+
+        async function callAPI(data){const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(data)});return r.json();}
+        function capturePhoto(v){const c=document.getElementById('captureCanvas'),ctx=c.getContext('2d');c.width=v.videoWidth;c.height=v.videoHeight;ctx.translate(c.width,0);ctx.scale(-1,1);ctx.drawImage(v,0,0);return c.toDataURL('image/jpeg',0.8);}
+
+        function setupEvents(){
+            document.querySelectorAll('.shift-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.shift-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');selectedShift=b.dataset.shift;checkBtns();}));
+            document.getElementById('btnCheckIn').addEventListener('click',()=>recordAtt('checkIn'));
+            document.getElementById('btnCheckOut').addEventListener('click',()=>recordAtt('checkOut'));
+            document.getElementById('loginForm').addEventListener('submit',handleLogin);
+            document.getElementById('addEmployeeForm').addEventListener('submit',handleAddEmp);
+            document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='add-employee')loadNextId();if(b.dataset.tab!=='register-face')stopRegCam();lucide.createIcons();}));
+            document.getElementById('regEmployeeSelect').addEventListener('change',handleRegChange);
+            document.getElementById('btnSaveFace').addEventListener('click',saveFace);
         }
 
-        function restoreSession() {
-            const savedUser = sessionStorage.getItem('currentUser');
-            const savedPage = sessionStorage.getItem('currentPage');
-            if (savedUser) currentUser = JSON.parse(savedUser);
-            if (savedPage && savedPage !== 'pageAttendance') {
-                if (currentUser || savedPage === 'pageAttendance') showPage(savedPage, false);
-            }
+        async function loadFaceAPI(){
+            const URL='https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
+            try{
+                document.getElementById('loadingText').textContent='โหลด Face Detection...';document.getElementById('loadingProgress').style.width='25%';
+                await faceapi.nets.tinyFaceDetector.loadFromUri(URL);
+                document.getElementById('loadingText').textContent='โหลด Landmarks...';document.getElementById('loadingProgress').style.width='50%';
+                await faceapi.nets.faceLandmark68Net.loadFromUri(URL);
+                document.getElementById('loadingText').textContent='โหลด Recognition...';document.getElementById('loadingProgress').style.width='75%';
+                await faceapi.nets.faceRecognitionNet.loadFromUri(URL);
+                document.getElementById('loadingText').textContent='พร้อมใช้งาน!';document.getElementById('loadingProgress').style.width='100%';
+                setTimeout(()=>document.getElementById('loadingOverlay').classList.add('hidden'),500);
+            }catch(e){document.getElementById('loadingText').textContent='โหลดไม่สำเร็จ';}
         }
 
-        function getCurrentPage() {
-            const pages = ['pageAttendance', 'pageAdmin', 'pageDashboard'];
-            for (const p of pages) {
-                if (document.getElementById(p).classList.contains('active')) return p;
-            }
-            return 'pageAttendance';
-        }
+        async function loadEmployees(){try{const r=await callAPI({action:'getEmployeesWithFace'});if(r.status==='success'){allEmployees=r.data;employees=r.data.filter(e=>e.hasFaceData);renderEmpTable();populateRegSelect();}}catch(e){}}
+        async function loadNextId(){try{const r=await callAPI({action:'getNextEmployeeId'});if(r.status==='success')document.getElementById('newEmpId').value=r.nextId;}catch(e){}}
 
-        // ==========================================
-        // API Helper
-        // ==========================================
-        async function callAPI(data) {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(data)
-            });
-            return await response.json();
-        }
-
-        // ==========================================
-        // Anti-Spoofing: Detect face landmarks movement
-        // Real faces have micro-movements (blinking, breathing)
-        // Photos/screens are static or move uniformly
-        // ==========================================
-        function checkLiveness(landmarks) {
-            if (!landmarks || !landmarks.positions) return false;
-            
-            const currentPositions = landmarks.positions;
-            
-            if (!prevLandmarks) {
-                prevLandmarks = currentPositions;
-                return false; // Need at least 2 frames
-            }
-            
-            // Calculate movement of key facial points
-            // Focus on eyes (indices 36-47) and mouth (indices 48-67)
-            const eyeIndices = [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47];
-            const mouthIndices = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67];
-            
-            let eyeMovement = 0;
-            let mouthMovement = 0;
-            let totalMovement = 0;
-            
-            // Calculate eye movement
-            eyeIndices.forEach(i => {
-                if (currentPositions[i] && prevLandmarks[i]) {
-                    const dx = currentPositions[i].x - prevLandmarks[i].x;
-                    const dy = currentPositions[i].y - prevLandmarks[i].y;
-                    eyeMovement += Math.sqrt(dx * dx + dy * dy);
-                }
-            });
-            eyeMovement /= eyeIndices.length;
-            
-            // Calculate mouth movement
-            mouthIndices.forEach(i => {
-                if (currentPositions[i] && prevLandmarks[i]) {
-                    const dx = currentPositions[i].x - prevLandmarks[i].x;
-                    const dy = currentPositions[i].y - prevLandmarks[i].y;
-                    mouthMovement += Math.sqrt(dx * dx + dy * dy);
-                }
-            });
-            mouthMovement /= mouthIndices.length;
-            
-            // Calculate overall face movement (nose - index 30)
-            if (currentPositions[30] && prevLandmarks[30]) {
-                const dx = currentPositions[30].x - prevLandmarks[30].x;
-                const dy = currentPositions[30].y - prevLandmarks[30].y;
-                totalMovement = Math.sqrt(dx * dx + dy * dy);
-            }
-            
-            // Store current as previous for next frame
-            prevLandmarks = currentPositions;
-            
-            // Calculate relative movement (eye/mouth movement relative to face movement)
-            // Real face: eyes and mouth move independently of head
-            // Photo: everything moves together (uniform movement)
-            const relativeEyeMovement = totalMovement > 0.5 ? eyeMovement / totalMovement : eyeMovement;
-            const relativeMouthMovement = totalMovement > 0.5 ? mouthMovement / totalMovement : mouthMovement;
-            
-            // Add to movement history
-            landmarkMovementHistory.push({
-                eye: relativeEyeMovement,
-                mouth: relativeMouthMovement,
-                total: totalMovement
-            });
-            
-            // Keep only recent history
-            if (landmarkMovementHistory.length > MOVEMENT_HISTORY_SIZE) {
-                landmarkMovementHistory.shift();
-            }
-            
-            // Need enough history to make decision
-            if (landmarkMovementHistory.length < 5) {
-                return false;
-            }
-            
-            // Analyze movement pattern
-            let hasVariation = false;
-            let variationCount = 0;
-            
-            for (let i = 1; i < landmarkMovementHistory.length; i++) {
-                const prev = landmarkMovementHistory[i - 1];
-                const curr = landmarkMovementHistory[i];
-                
-                // Check for eye movement variation (blinking)
-                if (Math.abs(curr.eye - prev.eye) > LIVENESS_THRESHOLD) {
-                    variationCount++;
-                }
-                
-                // Check for mouth movement variation
-                if (Math.abs(curr.mouth - prev.mouth) > LIVENESS_THRESHOLD) {
-                    variationCount++;
-                }
-            }
-            
-            // Real face should have some natural variation
-            hasVariation = variationCount >= 2;
-            
-            return hasVariation;
-        }
-        
-        function resetLivenessDetection() {
-            prevLandmarks = null;
-            landmarkMovementHistory = [];
-        }
-
-        // ==========================================
-        // Capture Photo
-        // ==========================================
-        function capturePhoto(videoElement) {
-            const canvas = document.getElementById('captureCanvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = videoElement.videoWidth;
-            canvas.height = videoElement.videoHeight;
-            ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
-            ctx.drawImage(videoElement, 0, 0);
-            return canvas.toDataURL('image/jpeg', 0.8);
-        }
-
-        // ==========================================
-        // Event Listeners
-        // ==========================================
-        function setupEventListeners() {
-            document.querySelectorAll('.shift-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    selectedShift = btn.dataset.shift;
-                    checkActionButtons();
-                });
-            });
-
-            document.getElementById('btnCheckIn').addEventListener('click', () => recordAttendance('checkIn'));
-            document.getElementById('btnCheckOut').addEventListener('click', () => recordAttendance('checkOut'));
-            document.getElementById('loginForm').addEventListener('submit', handleLogin);
-            document.getElementById('addEmployeeForm').addEventListener('submit', handleAddEmployee);
-
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    btn.classList.add('active');
-                    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-                    if (btn.dataset.tab === 'add-employee') loadNextEmployeeId();
-                    if (btn.dataset.tab !== 'register-face') stopRegCamera();
-                    lucide.createIcons();
-                });
-            });
-
-            document.getElementById('regEmployeeSelect').addEventListener('change', handleRegEmployeeChange);
-            document.getElementById('btnSaveFace').addEventListener('click', saveFace);
-        }
-
-        // ==========================================
-        // Face API
-        // ==========================================
-        async function loadFaceApiModels() {
-            const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
-            try {
-                document.getElementById('loadingText').textContent = 'กำลังโหลด Face Detection...';
-                document.getElementById('loadingProgress').style.width = '25%';
-                await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-                
-                document.getElementById('loadingText').textContent = 'กำลังโหลด Face Landmark...';
-                document.getElementById('loadingProgress').style.width = '50%';
-                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-                
-                document.getElementById('loadingText').textContent = 'กำลังโหลด Face Recognition...';
-                document.getElementById('loadingProgress').style.width = '75%';
-                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-                
-                document.getElementById('loadingText').textContent = 'พร้อมใช้งาน!';
-                document.getElementById('loadingProgress').style.width = '100%';
-                
-                setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 500);
-            } catch (error) {
-                console.error('Error loading models:', error);
-                document.getElementById('loadingText').textContent = 'เกิดข้อผิดพลาด กรุณารีเฟรช';
-            }
-        }
-
-        // ==========================================
-        // Employees
-        // ==========================================
-        async function loadEmployeesWithFace() {
-            try {
-                const result = await callAPI({ action: 'getEmployeesWithFace' });
-                if (result.status === 'success') {
-                    allEmployees = result.data;
-                    employees = result.data.filter(emp => emp.hasFaceData);
-                    renderEmployeeList();
-                    populateRegEmployeeSelect();
-                }
-            } catch (e) { console.error('Error loading employees:', e); }
-        }
-
-        async function loadNextEmployeeId() {
-            try {
-                const result = await callAPI({ action: 'getNextEmployeeId' });
-                if (result.status === 'success') {
-                    document.getElementById('newEmpId').value = result.nextId;
-                }
-            } catch (e) { console.error('Error loading next ID:', e); }
-        }
-
-        function renderEmployeeList() {
-            const list = document.getElementById('employeeList');
-            const search = document.getElementById('searchEmployee')?.value?.toLowerCase() || '';
-            const filtered = allEmployees.filter(emp => emp.name.toLowerCase().includes(search) || emp.id.toLowerCase().includes(search));
-
-            if (filtered.length === 0) {
-                list.innerHTML = `<div class="empty-state"><i data-lucide="users"></i><p>ไม่พบข้อมูลพนักงาน</p></div>`;
-                lucide.createIcons();
-                return;
-            }
-
-            list.innerHTML = filtered.map(emp => `
-                <div class="employee-card">
-                    <div class="emp-avatar">${emp.name.charAt(0)}</div>
-                    <div class="emp-info">
-                        <span class="emp-badge ${emp.hasFaceData ? 'registered' : 'not-registered'}">
-                            <i data-lucide="${emp.hasFaceData ? 'check' : 'alert-circle'}"></i>
-                            ${emp.hasFaceData ? 'ลงทะเบียนแล้ว' : 'ยังไม่ลงทะเบียน'}
-                        </span>
-                        <h4>${emp.name}</h4>
-                        <p>${emp.id} | ${emp.position}</p>
-                    </div>
-                    <div class="emp-actions">
-                        <button class="icon-btn primary" onclick="selectForReg('${emp.id}')" title="ลงทะเบียนใบหน้า"><i data-lucide="camera"></i></button>
-                        ${emp.hasFaceData ? `<button class="icon-btn danger" onclick="deleteFace('${emp.id}')" title="ลบข้อมูลใบหน้า"><i data-lucide="trash-2"></i></button>` : ''}
-                    </div>
-                </div>
-            `).join('');
+        function renderEmpTable(){
+            const tbody=document.getElementById('employeeTableBody'),search=(document.getElementById('searchEmployee')?.value||'').toLowerCase();
+            const filtered=allEmployees.filter(e=>e.name.toLowerCase().includes(search)||e.id.toLowerCase().includes(search));
+            if(!filtered.length){tbody.innerHTML=`<tr><td colspan="5" class="empty-state"><i data-lucide="users"></i><p>ไม่พบข้อมูล</p></td></tr>`;lucide.createIcons();return;}
+            tbody.innerHTML=filtered.map(e=>`<tr><td><div class="emp-cell"><div class="emp-avatar">${e.name.charAt(0)}</div><div><div class="emp-name">${e.name}</div><div class="emp-id">${e.id}</div></div></div></td><td>${e.position||'-'}</td><td>${e.group||'-'}</td><td><span class="badge ${e.hasFaceData?'success':'warning'}">${e.hasFaceData?'ลงทะเบียนแล้ว':'ยังไม่ลงทะเบียน'}</span></td><td><div class="action-btns"><button class="btn btn-icon" onclick="selectForReg('${e.id}')"><i data-lucide="camera"></i></button>${e.hasFaceData?`<button class="btn btn-icon danger" onclick="deleteFace('${e.id}')"><i data-lucide="trash-2"></i></button>`:''}</div></td></tr>`).join('');
             lucide.createIcons();
         }
+        function filterEmployees(){renderEmpTable();}
+        function populateRegSelect(){const s=document.getElementById('regEmployeeSelect');s.innerHTML='<option value="">-- เลือกพนักงาน --</option>';allEmployees.forEach(e=>{const o=document.createElement('option');o.value=e.id;o.textContent=`${e.id} - ${e.name}${e.hasFaceData?' (ลงทะเบียนแล้ว)':''}`;s.appendChild(o);});}
 
-        function filterEmployees() { renderEmployeeList(); }
+        function updateDateTime(){const n=new Date();document.getElementById('currentTime').textContent=n.toLocaleTimeString('th-TH',{hour12:false});document.getElementById('currentDate').textContent=n.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
 
-        function populateRegEmployeeSelect() {
-            const select = document.getElementById('regEmployeeSelect');
-            select.innerHTML = '<option value="">-- เลือกพนักงาน --</option>';
-            allEmployees.forEach(emp => {
-                const option = document.createElement('option');
-                option.value = emp.id;
-                option.textContent = `${emp.id} - ${emp.name} ${emp.hasFaceData ? '(ลงทะเบียนแล้ว)' : ''}`;
-                select.appendChild(option);
-            });
+        function isPointInPolygon(lat,lng,poly){let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const xi=poly[i].lat,yi=poly[i].lng,xj=poly[j].lat,yj=poly[j].lng;if(((yi>lng)!==(yj>lng))&&(lat<(xj-xi)*(lng-yi)/(yj-yi)+xi))inside=!inside;}return inside;}
+        function isInAnyWorkArea(lat,lng){for(let i=0;i<WORK_AREAS.length;i++)if(isPointInPolygon(lat,lng,WORK_AREAS[i]))return{valid:true,area:i+1};return{valid:false,area:-1};}
+        function getLocation(){if(!navigator.geolocation)return;navigator.geolocation.watchPosition(p=>{currentLocation={latitude:p.coords.latitude,longitude:p.coords.longitude};},e=>{currentLocation=null;},{enableHighAccuracy:true,timeout:10000,maximumAge:5000});}
+
+        async function startCamera(){try{videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});const v=document.getElementById('video');v.srcObject=videoStream;v.onloadedmetadata=()=>{v.play();document.getElementById('cameraPlaceholder').style.display='none';document.getElementById('overlayCanvas').width=v.videoWidth;document.getElementById('overlayCanvas').height=v.videoHeight;};}catch(e){document.getElementById('cameraPlaceholder').innerHTML=`<i data-lucide="camera-off"></i><p>เปิดกล้องไม่ได้</p>`;lucide.createIcons();}}
+
+        function startDetection(){if(detectionInterval)clearInterval(detectionInterval);detectionInterval=setInterval(async()=>{if(isDetecting)return;const v=document.getElementById('video');if(v.paused||v.ended)return;isDetecting=true;await detectFace();isDetecting=false;},300);}
+
+        async function detectFace(){
+            const v=document.getElementById('video'),c=document.getElementById('overlayCanvas');
+            try{
+                const d=await faceapi.detectSingleFace(v,new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+                const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
+                if(!d){updateFaceStatus('face','กำลังค้นหาใบหน้า...');matchedEmployee=null;faceDescriptor=null;document.getElementById('matchedSection').classList.add('hidden');checkBtns();return;}
+                faceDescriptor=d.descriptor;const box=d.detection.box,sx=c.width/v.videoWidth,sy=c.height/v.videoHeight;
+                let best=null,bestD=1;for(const e of employees){if(!e.faceDescriptor)continue;const dist=faceapi.euclideanDistance(d.descriptor,new Float32Array(e.faceDescriptor));if(dist<bestD&&dist<FACE_MATCH_THRESHOLD){bestD=dist;best=e;}}
+                ctx.strokeStyle=best?'#2A9D8F':'#E63946';ctx.lineWidth=4;ctx.strokeRect(box.x*sx,box.y*sy,box.width*sx,box.height*sy);
+                if(best){matchedEmployee=best;matchedEmployee.faceDistance=bestD;const conf=((1-bestD)*100).toFixed(1);updateFaceStatus('matched',best.name);document.getElementById('matchedSection').classList.remove('hidden');document.getElementById('matchedName').textContent=best.name;document.getElementById('matchedPosition').textContent=`${best.id} | ${best.position}`;document.getElementById('matchConfidence').textContent=conf+'%';document.getElementById('matchedAvatar').textContent=best.name.charAt(0);}
+                else{matchedEmployee=null;updateFaceStatus('face','ไม่พบข้อมูลใบหน้า');document.getElementById('matchedSection').classList.add('hidden');}
+                checkBtns();
+            }catch(e){}
         }
 
-        // ==========================================
-        // DateTime
-        // ==========================================
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('currentTime').textContent = now.toLocaleTimeString('th-TH', { hour12: false });
-            document.getElementById('currentDate').textContent = now.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        function updateFaceStatus(s,m){const el=document.getElementById('faceStatus');el.className='status-card '+s;el.innerHTML=`<i data-lucide="${s==='matched'?'smile':'scan-face'}"></i><span>${m}</span>`;lucide.createIcons();}
+        function checkBtns(){const ok=matchedEmployee&&selectedShift;document.getElementById('btnCheckIn').disabled=!ok;document.getElementById('btnCheckOut').disabled=!ok;}
+
+        async function recordAtt(action){
+            if(!matchedEmployee||!selectedShift)return;
+            if(!currentLocation){showResult('error','ไม่พบ GPS','กรุณาเปิด GPS');return;}
+            const area=isInAnyWorkArea(currentLocation.latitude,currentLocation.longitude);
+            if(!area.valid){showResult('error','นอกพื้นที่',`ตำแหน่งปัจจุบัน:\nLat: ${currentLocation.latitude.toFixed(6)}\nLng: ${currentLocation.longitude.toFixed(6)}`);return;}
+            const btn=document.getElementById(action==='checkIn'?'btnCheckIn':'btnCheckOut'),orig=btn.innerHTML;
+            btn.innerHTML=spinnerSVG+' บันทึก...';btn.disabled=true;
+            try{
+                const photo=capturePhoto(document.getElementById('video'));
+                const r=await callAPI({action,employeeId:matchedEmployee.id,employeeName:matchedEmployee.name,latitude:currentLocation.latitude,longitude:currentLocation.longitude,faceVerified:true,faceConfidence:1-matchedEmployee.faceDistance,shift:selectedShift,photoBase64:photo});
+                if(r.status==='success'){const t=action==='checkIn'?'เข้างาน':'ออกงาน',late=r.data.lateStatus==='สาย';showResult(late?'warning':'success',`บันทึก${t}สำเร็จ`,`${matchedEmployee.name}\nผลัด: ${r.data.shift}\nเวลา: ${r.data.time}\nพื้นที่: ${r.data.area}\nสถานะ: ${r.data.lateStatus}${late?' ('+r.data.lateMinutes+' นาที)':''}`);}
+                else showResult('error','ไม่สำเร็จ',r.message);
+            }catch(e){showResult('error','เกิดข้อผิดพลาด','เชื่อมต่อไม่ได้');}
+            finally{btn.innerHTML=orig;lucide.createIcons();checkBtns();}
         }
 
-        // ==========================================
-        // Location - Get silently, check when button pressed
-        // ==========================================
-        function isPointInPolygon(lat, lng, polygon) {
-            let inside = false;
-            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-                const xi = polygon[i].lat, yi = polygon[i].lng;
-                const xj = polygon[j].lat, yj = polygon[j].lng;
-                if (((yi > lng) !== (yj > lng)) && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi)) inside = !inside;
-            }
-            return inside;
+        function showLoginModal(){document.getElementById('loginModal').classList.add('active');lucide.createIcons();}
+        function closeLoginModal(){document.getElementById('loginModal').classList.remove('active');}
+        async function handleLogin(e){
+            e.preventDefault();const u=document.getElementById('loginUsername').value,p=document.getElementById('loginPassword').value,btn=e.target.querySelector('button[type="submit"]'),orig=btn.innerHTML;
+            btn.innerHTML=spinnerSVG+' เข้าสู่ระบบ...';btn.disabled=true;
+            try{const r=await callAPI({action:'login',username:u,password:p});if(r.status==='success'){currentUser=r.data;saveSession();closeLoginModal();showPage('pageAdmin');await loadEmployees();}else showResult('error','ไม่สำเร็จ',r.message);}
+            catch(e){showResult('error','เกิดข้อผิดพลาด','เชื่อมต่อไม่ได้');}
+            finally{btn.innerHTML=orig;btn.disabled=false;lucide.createIcons();}
+        }
+        function logout(){currentUser=null;sessionStorage.clear();showPage('pageAttendance');}
+        function showPage(id,save=true){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');if(id==='pageDashboard')setToday();if(id!=='pageAdmin')stopRegCam();if(save)saveSession();lucide.createIcons();}
+
+        async function handleAddEmp(e){
+            e.preventDefault();const data={action:'addEmployee',id:document.getElementById('newEmpId').value.trim(),name:document.getElementById('newEmpName').value.trim(),position:document.getElementById('newEmpPosition').value.trim(),group:document.getElementById('newEmpGroup').value.trim()};
+            try{const r=await callAPI(data);if(r.status==='success'){showResult('success','สำเร็จ',r.message);document.getElementById('newEmpName').value='';document.getElementById('newEmpPosition').value='';document.getElementById('newEmpGroup').value='';await loadEmployees();await loadNextId();document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelector('[data-tab="employees"]').classList.add('active');document.getElementById('tab-employees').classList.add('active');}else showResult('error','ไม่สำเร็จ',r.message);}
+            catch(e){showResult('error','เกิดข้อผิดพลาด','เชื่อมต่อไม่ได้');}
         }
 
-        function getLocation() {
-            if (!navigator.geolocation) { 
-                console.log('Geolocation not supported');
-                return; 
-            }
-            navigator.geolocation.watchPosition(
-                (position) => {
-                    currentLocation = { 
-                        latitude: position.coords.latitude, 
-                        longitude: position.coords.longitude 
-                    };
-                },
-                (error) => { 
-                    console.log('Location error:', error);
-                    currentLocation = null; 
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-            );
+        function selectForReg(id){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelector('[data-tab="register-face"]').classList.add('active');document.getElementById('tab-register-face').classList.add('active');document.getElementById('regEmployeeSelect').value=id;handleRegChange();lucide.createIcons();}
+        async function handleRegChange(){const id=document.getElementById('regEmployeeSelect').value;if(id){selectedRegEmployee=allEmployees.find(e=>e.id===id);showSelEmp();await startRegCam();startRegDetection();}else{selectedRegEmployee=null;hideSelEmp();stopRegCam();}}
+        function showSelEmp(){document.getElementById('selectedEmployee').classList.remove('hidden');document.getElementById('selectedName').textContent=selectedRegEmployee.name;document.getElementById('selectedPosition').textContent=`${selectedRegEmployee.position} | ${selectedRegEmployee.group}`;document.getElementById('selectedAvatar').textContent=selectedRegEmployee.name.charAt(0);document.getElementById('currentFaceStatus').classList.remove('hidden');document.getElementById('faceRegistrationStatus').innerHTML=selectedRegEmployee.hasFaceData?'<span class="badge success">ลงทะเบียนแล้ว</span>':'<span class="badge warning">ยังไม่ลงทะเบียน</span>';lucide.createIcons();}
+        function hideSelEmp(){document.getElementById('selectedEmployee').classList.add('hidden');document.getElementById('currentFaceStatus').classList.add('hidden');}
+
+        async function startRegCam(){try{regVideoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});const v=document.getElementById('regVideo');v.srcObject=regVideoStream;v.onloadedmetadata=()=>{v.play();document.getElementById('regPlaceholder').style.display='none';document.getElementById('regCanvas').width=v.videoWidth;document.getElementById('regCanvas').height=v.videoHeight;};}catch(e){}}
+        function stopRegCam(){if(regDetectionInterval){clearInterval(regDetectionInterval);regDetectionInterval=null;}if(regVideoStream){regVideoStream.getTracks().forEach(t=>t.stop());regVideoStream=null;}const v=document.getElementById('regVideo');if(v)v.srcObject=null;const p=document.getElementById('regPlaceholder');if(p){p.style.display='flex';p.innerHTML=`<i data-lucide="camera"></i><p>เลือกพนักงาน</p>`;}regFaceDescriptor=null;document.getElementById('btnSaveFace').disabled=true;lucide.createIcons();}
+        function startRegDetection(){if(regDetectionInterval)clearInterval(regDetectionInterval);regDetectionInterval=setInterval(async()=>{const v=document.getElementById('regVideo');if(!v||v.paused||v.ended||!selectedRegEmployee)return;await detectRegFace();},300);}
+
+        async function detectRegFace(){
+            const v=document.getElementById('regVideo'),c=document.getElementById('regCanvas');
+            try{const d=await faceapi.detectSingleFace(v,new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
+            if(!d){updateRegStatus('detecting','ไม่พบใบหน้า');regFaceDescriptor=null;document.getElementById('btnSaveFace').disabled=true;return;}
+            regFaceDescriptor=d.descriptor;const box=d.detection.box,sx=c.width/v.videoWidth,sy=c.height/v.videoHeight;ctx.strokeStyle='#2A9D8F';ctx.lineWidth=4;ctx.strokeRect(box.x*sx,box.y*sy,box.width*sx,box.height*sy);updateRegStatus('detected','พบใบหน้า - พร้อมบันทึก');document.getElementById('btnSaveFace').disabled=false;}catch(e){}
+        }
+        function updateRegStatus(s,m){const el=document.getElementById('regFaceStatus');el.className='face-status '+s;el.innerHTML=`<i data-lucide="${s==='detected'?'smile':'scan-face'}"></i><span>${m}</span>`;lucide.createIcons();}
+
+        async function saveFace(){
+            if(!regFaceDescriptor||!selectedRegEmployee)return;const btn=document.getElementById('btnSaveFace');btn.disabled=true;btn.innerHTML=spinnerSVG+' บันทึก...';
+            try{const photo=capturePhoto(document.getElementById('regVideo'));const r=await callAPI({action:'registerFace',employeeId:selectedRegEmployee.id,faceDescriptor:Array.from(regFaceDescriptor),photoBase64:photo});if(r.status==='success'){showResult('success','สำเร็จ',r.message);await loadEmployees();selectedRegEmployee=allEmployees.find(e=>e.id===selectedRegEmployee.id);showSelEmp();}else showResult('error','ไม่สำเร็จ',r.message);}
+            catch(e){showResult('error','เกิดข้อผิดพลาด','เชื่อมต่อไม่ได้');}
+            finally{btn.disabled=false;btn.innerHTML='<i data-lucide="save"></i>บันทึกใบหน้า';lucide.createIcons();}
         }
 
-        // ==========================================
-        // Camera
-        // ==========================================
-        async function startCamera() {
-            try {
-                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
-                const video = document.getElementById('video');
-                video.srcObject = videoStream;
-                video.onloadedmetadata = () => {
-                    video.play();
-                    document.getElementById('cameraPlaceholder').style.display = 'none';
-                    document.getElementById('overlayCanvas').width = video.videoWidth;
-                    document.getElementById('overlayCanvas').height = video.videoHeight;
-                };
-            } catch (error) {
-                console.error('Camera error:', error);
-                document.getElementById('cameraPlaceholder').innerHTML = `<i data-lucide="camera-off"></i><p>ไม่สามารถเปิดกล้องได้</p>`;
-                lucide.createIcons();
-            }
+        async function deleteFace(id){if(!confirm('ลบข้อมูลใบหน้า?'))return;try{const r=await callAPI({action:'deleteFace',employeeId:id});if(r.status==='success'){showResult('success','สำเร็จ',r.message);await loadEmployees();}else showResult('error','ไม่สำเร็จ',r.message);}catch(e){showResult('error','เกิดข้อผิดพลาด','เชื่อมต่อไม่ได้');}}
+
+        function setToday(){const t=new Date();document.getElementById('dashboardDate').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;loadDashboard();}
+        async function loadDashboard(){
+            const dt=document.getElementById('dashboardDate').value;if(!dt)return;
+            const btnL=document.getElementById('btnLoadDash'),btnT=document.getElementById('btnToday'),origL=btnL.innerHTML,origT=btnT.innerHTML;
+            btnL.innerHTML=spinnerSVG+' โหลด...';btnL.disabled=true;btnT.disabled=true;
+            const[y,m,d]=dt.split('-'),dateStr=`${d}/${m}/${y}`;
+            try{const empR=await callAPI({action:'getEmployees'});document.getElementById('statTotal').textContent=empR.data?.length||0;const r=await callAPI({action:'getDashboard',date:dateStr});if(r.status==='success'){const data=r.data;document.getElementById('statCheckins').textContent=data.totalCheckins||0;document.getElementById('statCheckouts').textContent=data.totalCheckouts||0;document.getElementById('statLate').textContent=data.totalLate||0;renderCharts(data);dashboardRecords=data.employees||[];currentPage=1;renderDashTable();}}
+            catch(e){}finally{btnL.innerHTML=origL;btnL.disabled=false;btnT.disabled=false;lucide.createIcons();}
         }
 
-        // ==========================================
-        // Face Detection with Anti-Spoofing
-        // ==========================================
-        function startFaceDetection() {
-            if (detectionInterval) clearInterval(detectionInterval);
-            detectionInterval = setInterval(async () => {
-                if (isDetecting) return;
-                const video = document.getElementById('video');
-                if (video.paused || video.ended) return;
-                isDetecting = true;
-                await detectAndMatchFace();
-                isDetecting = false;
-            }, DETECTION_INTERVAL);
+        function renderCharts(data){
+            const byShift=data.byShift||{};
+            const sCtx=document.getElementById('shiftChart').getContext('2d');if(shiftChart)shiftChart.destroy();
+            shiftChart=new Chart(sCtx,{type:'doughnut',data:{labels:Object.keys(byShift),datasets:[{data:Object.values(byShift).map(s=>s.checkins||0),backgroundColor:['#2A9D8F','#00B4D8','#F4A261'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+            const stCtx=document.getElementById('statusChart').getContext('2d');if(statusChart)statusChart.destroy();
+            statusChart=new Chart(stCtx,{type:'bar',data:{labels:['เข้างานปกติ','มาสาย','ออกงานแล้ว'],datasets:[{data:[(data.totalCheckins||0)-(data.totalLate||0),data.totalLate||0,data.totalCheckouts||0],backgroundColor:['#2A9D8F','#E63946','#00B4D8'],borderRadius:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
         }
 
-        async function detectAndMatchFace() {
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('overlayCanvas');
-            try {
-                const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                if (!detection) {
-                    updateFaceStatus('face', 'กำลังค้นหาใบหน้า...');
-                    matchedEmployee = null;
-                    faceDescriptor = null;
-                    isLiveDetected = false;
-                    resetLivenessDetection();
-                    document.getElementById('matchedSection').classList.add('hidden');
-                    checkActionButtons();
-                    return;
-                }
-
-                // Anti-spoofing check using landmarks movement
-                isLiveDetected = checkLiveness(detection.landmarks);
-                
-                faceDescriptor = detection.descriptor;
-                const box = detection.detection.box;
-                const scaleX = canvas.width / video.videoWidth;
-                const scaleY = canvas.height / video.videoHeight;
-
-                let bestMatch = null, bestDistance = 1;
-                for (const emp of employees) {
-                    if (!emp.faceDescriptor) continue;
-                    const distance = faceapi.euclideanDistance(detection.descriptor, new Float32Array(emp.faceDescriptor));
-                    if (distance < bestDistance && distance < FACE_MATCH_THRESHOLD) { bestDistance = distance; bestMatch = emp; }
-                }
-
-                // Draw box color based on match and liveness
-                if (!isLiveDetected) {
-                    ctx.strokeStyle = '#F59E0B'; // Warning - checking liveness
-                } else if (bestMatch) {
-                    ctx.strokeStyle = '#10B981'; // Green - matched and live
-                } else {
-                    ctx.strokeStyle = '#EF4444'; // Red - not matched
-                }
-                
-                ctx.lineWidth = 4;
-                ctx.strokeRect(box.x * scaleX, box.y * scaleY, box.width * scaleX, box.height * scaleY);
-
-                if (!isLiveDetected) {
-                    updateFaceStatus('spoofing', 'กรุณาขยับใบหน้าเล็กน้อย');
-                    matchedEmployee = null;
-                    document.getElementById('matchedSection').classList.add('hidden');
-                } else if (bestMatch) {
-                    matchedEmployee = bestMatch;
-                    matchedEmployee.faceDistance = bestDistance;
-                    const confidence = ((1 - bestDistance) * 100).toFixed(1);
-                    updateFaceStatus('matched', bestMatch.name);
-                    document.getElementById('matchedSection').classList.remove('hidden');
-                    document.getElementById('matchedName').textContent = bestMatch.name;
-                    document.getElementById('matchedPosition').textContent = `${bestMatch.id} | ${bestMatch.position}`;
-                    document.getElementById('matchConfidence').textContent = confidence + '%';
-                    document.getElementById('matchedAvatar').textContent = bestMatch.name.charAt(0);
-                } else {
-                    matchedEmployee = null;
-                    updateFaceStatus('face', 'ไม่พบข้อมูลใบหน้า');
-                    document.getElementById('matchedSection').classList.add('hidden');
-                }
-                checkActionButtons();
-            } catch (error) { console.error('Detection error:', error); }
+        function renderDashTable(){
+            const tbody=document.getElementById('dashboardTable'),totalPages=Math.ceil(dashboardRecords.length/ITEMS_PER_PAGE),start=(currentPage-1)*ITEMS_PER_PAGE,pageRecs=dashboardRecords.slice(start,start+ITEMS_PER_PAGE);
+            if(!dashboardRecords.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><i data-lucide="inbox"></i><p>ไม่มีข้อมูล</p></td></tr>`;document.getElementById('pagination').innerHTML='';lucide.createIcons();return;}
+            const convertUrl=u=>{if(!u)return'';if(u.includes('drive.google.com/uc?export=view&id='))return'https://lh3.googleusercontent.com/d/'+u.split('id=')[1];return u;};
+            tbody.innerHTML=pageRecs.map(e=>{const late=e.status==='สาย',cls=late?'class="late-row"':'',inP=convertUrl(e.checkInPhoto),outP=convertUrl(e.checkOutPhoto);return`<tr ${cls}><td><div class="emp-cell"><div class="emp-avatar" style="background:${late?'var(--danger)':'var(--success)'}">${e.empName.charAt(0)}</div><div><div class="emp-name" style="${late?'color:var(--danger)':''}">${e.empName}</div><div class="emp-id">${e.empId}</div></div></div></td><td>${e.shift||'-'}</td><td style="font-weight:600;color:var(--success)">${e.checkInTime}</td><td>${inP?`<img src="${inP}" class="photo-thumb" onclick="showImg('${inP}')" onerror="this.outerHTML='-'">`:`-`}</td><td style="font-weight:600;color:var(--danger)">${e.checkOutTime}</td><td>${outP?`<img src="${outP}" class="photo-thumb" onclick="showImg('${outP}')" onerror="this.outerHTML='-'">`:`-`}</td><td><span class="badge ${late?'danger':'success'}">${late?`สาย (${e.lateMinutes} นาที)`:'ปกติ'}</span></td></tr>`}).join('');
+            renderPagination(totalPages);lucide.createIcons();
         }
 
-        function updateFaceStatus(status, message) {
-            const el = document.getElementById('faceStatus');
-            el.className = 'status-card face ' + status;
-            let icon = 'scan-face';
-            if (status === 'matched') icon = 'smile';
-            else if (status === 'spoofing') icon = 'alert-triangle';
-            el.innerHTML = `<i data-lucide="${icon}"></i><span>${message}</span>`;
-            lucide.createIcons();
-        }
+        function renderPagination(total){const c=document.getElementById('pagination');if(total<=1){c.innerHTML='';return;}let h=`<button onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}><i data-lucide="chevron-left"></i></button>`;for(let i=1;i<=total;i++){if(i===1||i===total||(i>=currentPage-1&&i<=currentPage+1))h+=`<button onclick="goPage(${i})" class="${i===currentPage?'active':''}">${i}</button>`;else if(i===currentPage-2||i===currentPage+2)h+=`<span style="color:var(--text-muted)">...</span>`;}h+=`<span class="pagination-info">${dashboardRecords.length} คน</span><button onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}><i data-lucide="chevron-right"></i></button>`;c.innerHTML=h;lucide.createIcons();}
+        function goPage(p){const total=Math.ceil(dashboardRecords.length/ITEMS_PER_PAGE);if(p<1||p>total)return;currentPage=p;renderDashTable();}
 
-        // ==========================================
-        // Action Buttons - Enable when face matched and shift selected
-        // ==========================================
-        function checkActionButtons() {
-            // Enable button if face matched, live detected, and shift selected
-            // Location will be checked when button is pressed
-            const isReady = matchedEmployee && isLiveDetected && selectedShift;
-            document.getElementById('btnCheckIn').disabled = !isReady;
-            document.getElementById('btnCheckOut').disabled = !isReady;
-        }
-
-        async function recordAttendance(action) {
-            if (!matchedEmployee || !selectedShift) return;
-            
-            // Check location when button is pressed
-            if (!currentLocation) {
-                showResultModal('error', 'ไม่พบตำแหน่ง GPS', 'กรุณาเปิด GPS และอนุญาตให้เข้าถึงตำแหน่ง');
-                return;
-            }
-            
-            const inArea = isPointInPolygon(currentLocation.latitude, currentLocation.longitude, WORK_AREA_POLYGON);
-            if (!inArea) {
-                showResultModal('error', 'นอกพื้นที่ทำงาน', `คุณอยู่นอกพื้นที่ที่กำหนด\n\nตำแหน่งปัจจุบัน:\nLat: ${currentLocation.latitude.toFixed(6)}\nLng: ${currentLocation.longitude.toFixed(6)}`);
-                return;
-            }
-
-            const btn = action === 'checkIn' ? document.getElementById('btnCheckIn') : document.getElementById('btnCheckOut');
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = spinnerSVG + ' <span>กำลังบันทึก...</span>';
-            btn.disabled = true;
-
-            try {
-                const video = document.getElementById('video');
-                const photoBase64 = capturePhoto(video);
-                
-                const result = await callAPI({
-                    action: action,
-                    employeeId: matchedEmployee.id,
-                    employeeName: matchedEmployee.name,
-                    latitude: currentLocation.latitude,
-                    longitude: currentLocation.longitude,
-                    faceVerified: true,
-                    faceConfidence: 1 - matchedEmployee.faceDistance,
-                    shift: selectedShift,
-                    photoBase64: photoBase64
-                });
-
-                if (result.status === 'success') {
-                    const type = action === 'checkIn' ? 'เข้างาน' : 'ออกงาน';
-                    const isLate = result.data.lateStatus === 'สาย';
-                    showResultModal(isLate ? 'warning' : 'success', `บันทึก${type}สำเร็จ!`, `${matchedEmployee.name}\nผลัด: ${result.data.shift}\nเวลา: ${result.data.time}\nสถานะ: ${result.data.lateStatus}${isLate ? ' (' + result.data.lateMinutes + ' นาที)' : ''}`);
-                } else {
-                    showResultModal('error', 'ไม่สำเร็จ', result.message);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showResultModal('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
-            } finally {
-                btn.innerHTML = originalHTML;
-                lucide.createIcons();
-                checkActionButtons();
-            }
-        }
-
-        // ==========================================
-        // Login
-        // ==========================================
-        function showLoginModal() { document.getElementById('loginModal').classList.add('active'); lucide.createIcons(); }
-        function closeLoginModal() { document.getElementById('loginModal').classList.remove('active'); }
-
-        async function handleLogin(e) {
-            e.preventDefault();
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-            const btn = e.target.querySelector('button[type="submit"]');
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = spinnerSVG + ' กำลังเข้าสู่ระบบ...';
-            btn.disabled = true;
-
-            try {
-                const result = await callAPI({ action: 'login', username, password });
-                if (result.status === 'success') {
-                    currentUser = result.data;
-                    saveSession();
-                    closeLoginModal();
-                    showPage('pageAdmin');
-                    await loadEmployeesWithFace();
-                } else {
-                    showResultModal('error', 'เข้าสู่ระบบไม่สำเร็จ', result.message);
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                showResultModal('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
-            } finally {
-                btn.innerHTML = originalHTML;
-                btn.disabled = false;
-                lucide.createIcons();
-            }
-        }
-
-        function logout() {
-            currentUser = null;
-            sessionStorage.removeItem('currentUser');
-            sessionStorage.removeItem('currentPage');
-            showPage('pageAttendance');
-        }
-
-        // ==========================================
-        // Pages
-        // ==========================================
-        function showPage(pageId, save = true) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-            if (pageId === 'pageDashboard') setToday();
-            if (pageId !== 'pageAdmin') stopRegCamera();
-            if (save) saveSession();
-            lucide.createIcons();
-        }
-
-        // ==========================================
-        // Add Employee with Auto ID
-        // ==========================================
-        async function handleAddEmployee(e) {
-            e.preventDefault();
-            const data = {
-                action: 'addEmployee',
-                id: document.getElementById('newEmpId').value.trim(),
-                name: document.getElementById('newEmpName').value.trim(),
-                position: document.getElementById('newEmpPosition').value.trim(),
-                department: document.getElementById('newEmpDepartment').value.trim()
-            };
-
-            try {
-                const result = await callAPI(data);
-                if (result.status === 'success') {
-                    showResultModal('success', 'สำเร็จ!', result.message);
-                    document.getElementById('newEmpName').value = '';
-                    document.getElementById('newEmpPosition').value = '';
-                    document.getElementById('newEmpDepartment').value = '';
-                    await loadEmployeesWithFace();
-                    await loadNextEmployeeId();
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    document.querySelector('[data-tab="employees"]').classList.add('active');
-                    document.getElementById('tab-employees').classList.add('active');
-                } else {
-                    showResultModal('error', 'ไม่สำเร็จ', result.message);
-                }
-            } catch (error) {
-                showResultModal('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
-            }
-        }
-
-        // ==========================================
-        // Face Registration
-        // ==========================================
-        function selectForReg(empId) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelector('[data-tab="register-face"]').classList.add('active');
-            document.getElementById('tab-register-face').classList.add('active');
-            document.getElementById('regEmployeeSelect').value = empId;
-            handleRegEmployeeChange();
-            lucide.createIcons();
-        }
-
-        async function handleRegEmployeeChange() {
-            const empId = document.getElementById('regEmployeeSelect').value;
-            if (empId) {
-                selectedRegEmployee = allEmployees.find(e => e.id === empId);
-                showSelectedEmployee();
-                await startRegCamera();
-                startRegFaceDetection();
-            } else {
-                selectedRegEmployee = null;
-                hideSelectedEmployee();
-                stopRegCamera();
-            }
-        }
-
-        function showSelectedEmployee() {
-            const div = document.getElementById('selectedEmployee');
-            div.classList.remove('hidden');
-            document.getElementById('selectedName').textContent = selectedRegEmployee.name;
-            document.getElementById('selectedPosition').textContent = `${selectedRegEmployee.position} | ${selectedRegEmployee.department}`;
-            document.getElementById('selectedAvatar').textContent = selectedRegEmployee.name.charAt(0);
-            document.getElementById('currentFaceStatus').classList.remove('hidden');
-            document.getElementById('faceRegistrationStatus').innerHTML = selectedRegEmployee.hasFaceData
-                ? '<span class="emp-badge registered"><i data-lucide="check"></i> ลงทะเบียนใบหน้าแล้ว</span>'
-                : '<span class="emp-badge not-registered"><i data-lucide="alert-circle"></i> ยังไม่ได้ลงทะเบียน</span>';
-            lucide.createIcons();
-        }
-
-        function hideSelectedEmployee() {
-            document.getElementById('selectedEmployee').classList.add('hidden');
-            document.getElementById('currentFaceStatus').classList.add('hidden');
-        }
-
-        async function startRegCamera() {
-            try {
-                regVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
-                const video = document.getElementById('regVideo');
-                video.srcObject = regVideoStream;
-                video.onloadedmetadata = () => {
-                    video.play();
-                    document.getElementById('regPlaceholder').style.display = 'none';
-                    document.getElementById('regCanvas').width = video.videoWidth;
-                    document.getElementById('regCanvas').height = video.videoHeight;
-                };
-            } catch (error) { console.error('Camera error:', error); }
-        }
-
-        function stopRegCamera() {
-            if (regDetectionInterval) { clearInterval(regDetectionInterval); regDetectionInterval = null; }
-            if (regVideoStream) { regVideoStream.getTracks().forEach(track => track.stop()); regVideoStream = null; }
-            const video = document.getElementById('regVideo');
-            if (video) video.srcObject = null;
-            const placeholder = document.getElementById('regPlaceholder');
-            if (placeholder) { placeholder.style.display = 'flex'; placeholder.innerHTML = `<i data-lucide="camera"></i><p>กรุณาเลือกพนักงาน</p>`; }
-            regFaceDescriptor = null;
-            const btnSaveFace = document.getElementById('btnSaveFace');
-            if (btnSaveFace) btnSaveFace.disabled = true;
-            lucide.createIcons();
-        }
-
-        function startRegFaceDetection() {
-            if (regDetectionInterval) clearInterval(regDetectionInterval);
-            regDetectionInterval = setInterval(async () => {
-                const video = document.getElementById('regVideo');
-                if (!video || video.paused || video.ended || !selectedRegEmployee) return;
-                await detectRegFace();
-            }, 300);
-        }
-
-        async function detectRegFace() {
-            const video = document.getElementById('regVideo');
-            const canvas = document.getElementById('regCanvas');
-            try {
-                const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                if (!detection) {
-                    updateRegFaceStatus('detecting', 'ไม่พบใบหน้า');
-                    regFaceDescriptor = null;
-                    document.getElementById('btnSaveFace').disabled = true;
-                    return;
-                }
-
-                regFaceDescriptor = detection.descriptor;
-                const box = detection.detection.box;
-                const scaleX = canvas.width / video.videoWidth;
-                const scaleY = canvas.height / video.videoHeight;
-                ctx.strokeStyle = '#10B981';
-                ctx.lineWidth = 4;
-                ctx.strokeRect(box.x * scaleX, box.y * scaleY, box.width * scaleX, box.height * scaleY);
-                updateRegFaceStatus('detected', 'พบใบหน้า - พร้อมบันทึก');
-                document.getElementById('btnSaveFace').disabled = false;
-            } catch (error) { console.error('Detection error:', error); }
-        }
-
-        function updateRegFaceStatus(status, message) {
-            const el = document.getElementById('regFaceStatus');
-            el.className = 'face-status ' + status;
-            el.innerHTML = `<i data-lucide="${status === 'detected' ? 'smile' : 'scan-face'}"></i><span>${message}</span>`;
-            lucide.createIcons();
-        }
-
-        async function saveFace() {
-            if (!regFaceDescriptor || !selectedRegEmployee) return;
-            const btn = document.getElementById('btnSaveFace');
-            btn.disabled = true;
-            btn.innerHTML = spinnerSVG + ' กำลังบันทึก...';
-
-            try {
-                const video = document.getElementById('regVideo');
-                const photoBase64 = capturePhoto(video);
-                const result = await callAPI({
-                    action: 'registerFace',
-                    employeeId: selectedRegEmployee.id,
-                    faceDescriptor: Array.from(regFaceDescriptor),
-                    photoBase64: photoBase64
-                });
-
-                if (result.status === 'success') {
-                    showResultModal('success', 'สำเร็จ!', result.message);
-                    await loadEmployeesWithFace();
-                    selectedRegEmployee = allEmployees.find(e => e.id === selectedRegEmployee.id);
-                    showSelectedEmployee();
-                } else {
-                    showResultModal('error', 'ไม่สำเร็จ', result.message);
-                }
-            } catch (error) {
-                showResultModal('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i data-lucide="save"></i> บันทึกใบหน้า';
-                lucide.createIcons();
-            }
-        }
-
-        async function deleteFace(empId) {
-            if (!confirm('ต้องการลบข้อมูลใบหน้าของพนักงานนี้?')) return;
-            try {
-                const result = await callAPI({ action: 'deleteFace', employeeId: empId });
-                if (result.status === 'success') {
-                    showResultModal('success', 'สำเร็จ!', result.message);
-                    await loadEmployeesWithFace();
-                } else {
-                    showResultModal('error', 'ไม่สำเร็จ', result.message);
-                }
-            } catch (error) {
-                showResultModal('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
-            }
-        }
-
-        // ==========================================
-        // Dashboard with Pagination
-        // ==========================================
-        function setToday() {
-            const today = new Date();
-            document.getElementById('dashboardDate').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-            loadDashboard();
-        }
-
-        async function loadDashboard() {
-            const dateInput = document.getElementById('dashboardDate').value;
-            if (!dateInput) return;
-            
-            // Show spinner on buttons
-            const btnSearch = document.querySelector('.date-filter .btn-primary');
-            const btnToday = document.querySelector('.date-filter .btn-secondary');
-            const originalSearchHTML = btnSearch.innerHTML;
-            const originalTodayHTML = btnToday.innerHTML;
-            btnSearch.innerHTML = spinnerSVG + ' โหลด...';
-            btnSearch.disabled = true;
-            btnToday.disabled = true;
-            
-            const [yyyy, mm, dd] = dateInput.split('-');
-            const dateStr = `${dd}/${mm}/${yyyy}`;
-
-            try {
-                const empResult = await callAPI({ action: 'getEmployees' });
-                document.getElementById('statTotal').textContent = empResult.data?.length || 0;
-                const result = await callAPI({ action: 'getDashboard', date: dateStr });
-
-                if (result.status === 'success') {
-                    const data = result.data;
-                    document.getElementById('statCheckins').textContent = data.totalCheckins || 0;
-                    document.getElementById('statCheckouts').textContent = data.totalCheckouts || 0;
-                    document.getElementById('statLate').textContent = data.totalLate || 0;
-                    renderCharts(data);
-                    
-                    // Store employees for pagination
-                    dashboardRecords = data.employees || [];
-                    currentPage = 1;
-                    renderDashboardTable();
-                }
-            } catch (error) { 
-                console.error('Dashboard error:', error); 
-            } finally {
-                btnSearch.innerHTML = originalSearchHTML;
-                btnSearch.disabled = false;
-                btnToday.disabled = false;
-                lucide.createIcons();
-            }
-        }
-
-        function renderCharts(data) {
-            const byShift = data.byShift || {};
-            const shiftCtx = document.getElementById('shiftChart').getContext('2d');
-            if (shiftChart) shiftChart.destroy();
-            shiftChart = new Chart(shiftCtx, {
-                type: 'doughnut',
-                data: { 
-                    labels: Object.keys(byShift), 
-                    datasets: [{ 
-                        data: Object.values(byShift).map(s => s.checkins || 0), 
-                        backgroundColor: ['#10B981', '#0EA5E9', '#F59E0B'], 
-                        borderWidth: 0 
-                    }] 
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-            });
-
-            const statusCtx = document.getElementById('statusChart').getContext('2d');
-            if (statusChart) statusChart.destroy();
-            
-            const totalNormal = (data.totalCheckins || 0) - (data.totalLate || 0);
-            const totalLate = data.totalLate || 0;
-            const totalCheckouts = data.totalCheckouts || 0;
-            
-            statusChart = new Chart(statusCtx, {
-                type: 'bar',
-                data: { 
-                    labels: ['เข้างานปกติ', 'มาสาย', 'ออกงานแล้ว'], 
-                    datasets: [{ 
-                        data: [totalNormal, totalLate, totalCheckouts], 
-                        backgroundColor: ['#10B981', '#EF4444', '#0EA5E9'], 
-                        borderRadius: 8 
-                    }] 
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } }, 
-                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } 
-                }
-            });
-        }
-
-        function renderDashboardTable() {
-            const tbody = document.getElementById('dashboardTable');
-            const totalPages = Math.ceil(dashboardRecords.length / ITEMS_PER_PAGE);
-            const start = (currentPage - 1) * ITEMS_PER_PAGE;
-            const end = start + ITEMS_PER_PAGE;
-            const pageRecords = dashboardRecords.slice(start, end);
-
-            if (dashboardRecords.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><i data-lucide="inbox"></i><p>ไม่มีข้อมูลในวันที่เลือก</p></td></tr>`;
-                document.getElementById('pagination').innerHTML = '';
-                lucide.createIcons();
-                return;
-            }
-
-            tbody.innerHTML = pageRecords.map(emp => {
-                const isLate = emp.status === 'สาย';
-                const statusClass = isLate ? 'late' : 'normal';
-                const statusText = isLate ? `สาย (${emp.lateMinutes} นาที)` : 'ปกติ';
-                const rowClass = isLate ? 'class="late-row"' : '';
-                
-                // Avatar with initial letter only
-                const avatarHTML = `<div style="width: 40px; height: 40px; border-radius: 50%; background: ${isLate ? 'var(--danger)' : 'var(--accent)'}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">${emp.empName.charAt(0)}</div>`;
-                
-                // Convert old URL format to new thumbnail format if needed
-                const convertPhotoUrl = (url) => {
-                    if (!url) return '';
-                    if (url.includes('drive.google.com/uc?export=view&id=')) {
-                        const id = url.split('id=')[1];
-                        return 'https://lh3.googleusercontent.com/d/' + id;
-                    }
-                    return url;
-                };
-                
-                const checkInPhotoUrl = convertPhotoUrl(emp.checkInPhoto);
-                const checkOutPhotoUrl = convertPhotoUrl(emp.checkOutPhoto);
-                
-                return `
-                <tr ${rowClass}>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            ${avatarHTML}
-                            <div>
-                                <div style="font-weight: 500; ${isLate ? 'color: var(--danger);' : ''}">${emp.empName}</div>
-                                <div style="font-size: 0.8rem; color: var(--text-muted);">${emp.empId}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>${emp.shift || '-'}</td>
-                    <td style="font-weight: 600; color: var(--accent);">${emp.checkInTime}</td>
-                    <td>${checkInPhotoUrl ? `<img src="${checkInPhotoUrl}" class="photo-thumb" onclick="showImagePreview('${checkInPhotoUrl}')" onerror="this.outerHTML='<span style=\\'color: var(--text-muted);\\'>-</span>'">` : '<span style="color: var(--text-muted);">-</span>'}</td>
-                    <td style="font-weight: 600; color: var(--danger);">${emp.checkOutTime}</td>
-                    <td>${checkOutPhotoUrl ? `<img src="${checkOutPhotoUrl}" class="photo-thumb" onclick="showImagePreview('${checkOutPhotoUrl}')" onerror="this.outerHTML='<span style=\\'color: var(--text-muted);\\'>-</span>'">` : '<span style="color: var(--text-muted);">-</span>'}</td>
-                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                </tr>
-            `}).join('');
-
-            renderPagination(totalPages);
-            lucide.createIcons();
-        }
-
-        function renderPagination(totalPages) {
-            const container = document.getElementById('pagination');
-            if (totalPages <= 1) { container.innerHTML = ''; return; }
-
-            let html = `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}><i data-lucide="chevron-left"></i></button>`;
-            
-            for (let i = 1; i <= totalPages; i++) {
-                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-                    html += `<button onclick="goToPage(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
-                } else if (i === currentPage - 2 || i === currentPage + 2) {
-                    html += `<span style="color: var(--text-muted);">...</span>`;
-                }
-            }
-            
-            html += `<span class="pagination-info">${dashboardRecords.length} คน</span>`;
-            html += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}><i data-lucide="chevron-right"></i></button>`;
-            
-            container.innerHTML = html;
-            lucide.createIcons();
-        }
-
-        function goToPage(page) {
-            const totalPages = Math.ceil(dashboardRecords.length / ITEMS_PER_PAGE);
-            if (page < 1 || page > totalPages) return;
-            currentPage = page;
-            renderDashboardTable();
-        }
-
-        // ==========================================
-        // Image Preview
-        // ==========================================
-        function showImagePreview(url) {
-            document.getElementById('previewImage').src = url;
-            document.getElementById('imageModal').classList.add('active');
-            lucide.createIcons();
-        }
-
-        function closeImageModal() {
-            document.getElementById('imageModal').classList.remove('active');
-        }
-
-        // ==========================================
-        // Modals
-        // ==========================================
-        function showResultModal(type, title, message) {
-            const modal = document.getElementById('resultModal');
-            const icon = document.getElementById('resultIcon');
-            icon.className = 'modal-icon ' + type;
-            icon.innerHTML = `<i data-lucide="${type === 'success' ? 'check' : type === 'error' ? 'x' : 'alert-triangle'}"></i>`;
-            document.getElementById('resultTitle').textContent = title;
-            document.getElementById('resultMessage').textContent = message;
-            modal.classList.add('active');
-            lucide.createIcons();
-        }
-
-        function closeResultModal() { document.getElementById('resultModal').classList.remove('active'); }
-        document.getElementById('resultModal').addEventListener('click', (e) => { if (e.target.id === 'resultModal') closeResultModal(); });
-        document.getElementById('loginModal').addEventListener('click', (e) => { if (e.target.id === 'loginModal') closeLoginModal(); });
+        function showImg(url){document.getElementById('previewImage').src=url;document.getElementById('imageModal').classList.add('active');lucide.createIcons();}
+        function closeImageModal(){document.getElementById('imageModal').classList.remove('active');}
+        function showResult(type,title,msg){const m=document.getElementById('resultModal'),icon=document.getElementById('resultIcon');icon.className='modal-icon '+type;icon.innerHTML=`<i data-lucide="${type==='success'?'check':type==='error'?'x':'alert-triangle'}"></i>`;document.getElementById('resultTitle').textContent=title;document.getElementById('resultMessage').textContent=msg;m.classList.add('active');lucide.createIcons();}
+        function closeResultModal(){document.getElementById('resultModal').classList.remove('active');}
+        document.getElementById('resultModal').addEventListener('click',e=>{if(e.target.id==='resultModal')closeResultModal();});
+        document.getElementById('loginModal').addEventListener('click',e=>{if(e.target.id==='loginModal')closeLoginModal();});
     </script>
 </body>
 </html>
