@@ -1,49 +1,32 @@
 {
-    "name": "Obstacle Limitation Surface - สนามบินอุดรธานี",
-    "short_name": "OLS VTUD",
-    "description": "ระบบแสดงพื้นผิวจำกัดสิ่งกีดขวาง สนามบินอุดรธานี (VTUD)",
-    "start_url": "index.html",
+    "name": "ระบบลงเวลาทำงาน",
+    "short_name": "ลงเวลา",
+    "description": "ระบบลงเวลาเข้า-ออกงานด้วยการจดจำใบหน้า",
+    "start_url": "/",
     "display": "standalone",
-    "background_color": "#f0f5ff",
-    "theme_color": "#1976D2",
-    "orientation": "any",
+    "background_color": "#0d1117",
+    "theme_color": "#0d1117",
+    "orientation": "portrait-primary",
     "icons": [
         {
-            "src": "https://img.icons8.com/keek/48/airplane-take-off.png",
-            "sizes": "48x48",
-            "type": "image/png"
+            "src": "https://img.icons8.com/ios-filled/100/face-id.png",
+            "sizes": "100x100",
+            "type": "image/png",
+            "purpose": "any maskable"
         },
         {
-            "src": "https://img.icons8.com/keek/72/airplane-take-off.png",
-            "sizes": "72x72",
-            "type": "image/png"
-        },
-        {
-            "src": "https://img.icons8.com/keek/96/airplane-take-off.png",
-            "sizes": "96x96",
-            "type": "image/png"
-        },
-        {
-            "src": "https://img.icons8.com/keek/144/airplane-take-off.png",
-            "sizes": "144x144",
-            "type": "image/png"
-        },
-        {
-            "src": "https://img.icons8.com/keek/180/airplane-take-off.png",
-            "sizes": "180x180",
-            "type": "image/png"
-        },
-        {
-            "src": "https://img.icons8.com/keek/192/airplane-take-off.png",
+            "src": "https://img.icons8.com/ios-filled/192/face-id.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         },
         {
-            "src": "https://img.icons8.com/keek/512/airplane-take-off.png",
+            "src": "https://img.icons8.com/ios-filled/512/face-id.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         }
     ],
-    "categories": ["utilities", "navigation"],
+    "categories": ["business", "productivity"],
     "lang": "th"
 }
