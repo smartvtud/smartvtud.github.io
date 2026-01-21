@@ -1,154 +1,2859 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8" />
-<link rel="manifest" href="manifest.json">
-<title>Weather Radar System</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <title>Weather Radar System - VTUD</title>
+    
+    <!-- Leaflet CSS -->
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <style>
+        :root {
+            --bg-primary: #030712;
+            --bg-secondary: #0a1628;
+            --bg-card: rgba(15, 23, 42, 0.8);
+            --bg-card-hover: rgba(30, 41, 59, 0.9);
+            --border-color: rgba(59, 130, 246, 0.2);
+            --border-glow: rgba(59, 130, 246, 0.4);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-blue-light: #60a5fa;
+            --accent-cyan: #22d3ee;
+            --accent-purple: #a78bfa;
+            --accent-pink: #f472b6;
+            --accent-green: #4ade80;
+            --accent-yellow: #fbbf24;
+            --accent-orange: #fb923c;
+            --gradient-blue: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
+            --gradient-glow: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 100%);
+            --glass-bg: rgba(15, 23, 42, 0.7);
+            --glass-border: rgba(59, 130, 246, 0.15);
+        }
 
-<!-- Leaflet CSS -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<style>
-html, body {
-  margin: 0;
-  height: 100%;
-  font-family: "Segoe UI", sans-serif;
-}
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            background-image: 
+                radial-gradient(ellipse at top left, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(147, 51, 234, 0.1) 0%, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-/* =======================
-   DARK MODE THEME
-======================= */
-body.dark-mode {
-  background: #020617;
-  color: #e5e7eb;
-}
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
 
-#map {
-  height: 100vh;
-  width: 100%;
-}
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
 
-/* Top info bar */
-.update-info {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, #0f172a, #020617);
-  color: #93c5fd;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 14px;
-  z-index: 1000;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-blue);
+            border-radius: 4px;
+        }
 
-/* Leaflet controls */
-.dark-mode .leaflet-control {
-  background: rgba(15, 23, 42, 0.95);
-  color: #e5e7eb;
-  border: 1px solid #1e40af;
-}
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue-light);
+        }
 
-.dark-mode .leaflet-control a {
-  color: #93c5fd;
-}
+        /* Navbar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: rgba(3, 7, 18, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+        }
 
-/* Radar smooth */
-.leaflet-layer {
-  transition: opacity 0.4s ease;
-}
-</style>
+
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .navbar-brand .logo {
+            width: 50px;
+            height: 50px;
+            background: transparent;
+            border: 2px solid var(--accent-blue);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .navbar-brand .logo svg {
+            color: var(--accent-blue-light);
+            stroke: var(--accent-blue-light);
+        }
+
+        .navbar-brand .title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .current-time {
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 12px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .current-time svg {
+            color: var(--accent-blue-light);
+        }
+
+        /* Main Container */
+        .main-container {
+            margin-top: 100px;
+            padding: 24px;
+            max-width: 1800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Card Style */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), transparent, rgba(147, 51, 234, 0.2));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .card:hover {
+            border-color: var(--border-glow);
+            box-shadow: 0 8px 40px rgba(59, 130, 246, 0.15);
+        }
+
+        .card-header {
+            padding: 24px 28px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-header h2 svg {
+            color: var(--accent-blue-light);
+            width: 26px;
+            height: 26px;
+        }
+
+        .card-body {
+            padding: 28px;
+        }
+
+        /* Weather Stats Grid */
+        .weather-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        @media (max-width: 1200px) {
+            .weather-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .weather-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stat-card::before {
+            display: none;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-glow);
+            box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2);
+        }
+
+        .stat-card-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .stat-chart {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+            transition: all 0.5s ease;
+        }
+
+        .stat-value.updating {
+            opacity: 0.5;
+            transform: scale(0.98);
+        }
+
+        .stat-value span {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+
+        .stat-trend {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: var(--accent-green);
+        }
+
+        /* Weather Detail Cards */
+        .weather-details-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 1100px) {
+            .weather-details-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .weather-details-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+        }
+
+        .detail-card {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .detail-card:hover {
+            background: rgba(30, 41, 59, 0.6);
+            border-color: var(--accent-blue);
+        }
+
+        .detail-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2));
+        }
+
+        .detail-icon svg {
+            width: 24px;
+            height: 24px;
+            color: var(--accent-blue-light);
+        }
+
+        .detail-info {
+            flex: 1;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: all 0.5s ease;
+        }
+
+        /* METAR Raw Display */
+        .metar-raw-display {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metar-raw-display::before {
+            content: 'METAR';
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent-blue);
+            opacity: 0.5;
+        }
+
+        .metar-raw-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--accent-cyan);
+            line-height: 1.6;
+            word-break: break-all;
+        }
+
+        /* Update Info Bar - Hidden */
+        .update-info {
+            display: none;
+        }
+
+        /* Loading State */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Radar Section */
+        .radar-wrapper {
+            position: relative;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .map-container {
+            width: 100%;
+            height: 680px;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        #mapid {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            filter: brightness(1.05) contrast(1.1);
+        }
+
+        /* Dark Leaflet overrides */
+        .leaflet-container {
+            background: var(--bg-primary) !important;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .leaflet-control-zoom {
+            border: none !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        .leaflet-control-zoom a {
+            background: var(--bg-card) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--border-color) !important;
+            width: 36px !important;
+            height: 36px !important;
+            line-height: 36px !important;
+            font-size: 18px !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .leaflet-control-zoom a:hover {
+            background: var(--accent-blue) !important;
+            border-color: var(--accent-blue) !important;
+        }
+
+        .leaflet-control-zoom-in {
+            border-radius: 10px 10px 0 0 !important;
+        }
+
+        .leaflet-control-zoom-out {
+            border-radius: 0 0 10px 10px !important;
+        }
+
+        .leaflet-bar a:first-child {
+            border-top-left-radius: 10px !important;
+            border-top-right-radius: 10px !important;
+        }
+
+        .leaflet-bar a:last-child {
+            border-bottom-left-radius: 10px !important;
+            border-bottom-right-radius: 10px !important;
+        }
+
+        /* Map Controls */
+        .map-controls {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1002 !important;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 16px 24px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            align-items: center;
+            pointer-events: auto !important;
+        }
+
+        .timestamp-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            pointer-events: none;
+        }
+
+        .timestamp-display svg {
+            color: var(--accent-blue-light);
+        }
+
+        .forecast-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent-orange), #ea580c);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-left: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .playback-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            background: var(--accent-blue);
+            color: white;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            pointer-events: auto !important;
+            position: relative;
+            z-index: 1003 !important;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-icon {
+            padding: 14px;
+            min-width: 52px;
+            min-height: 52px;
+            justify-content: center;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid var(--accent-blue);
+        }
+
+        .btn-icon:hover {
+            background: var(--accent-blue);
+        }
+
+        .btn-icon svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .btn-play {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid var(--accent-blue);
+            min-height: 52px;
+            padding: 14px 20px;
+        }
+
+        .btn-play:hover {
+            background: var(--accent-blue);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Circle Labels */
+        .circle-label {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-shadow: 
+                0 0 10px rgba(0, 0, 0, 0.9),
+                0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .circle-label.red {
+            color: #f87171 !important;
+        }
+
+        .circle-label.blue {
+            color: var(--accent-blue-light) !important;
+        }
+
+        /* Measure Tool */
+        .measure-control {
+            position: absolute;
+            top: 90px;
+            left: 10px;
+            z-index: 1000;
+        }
+
+        .measure-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .measure-btn:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .measure-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--text-primary);
+        }
+
+        .measure-btn:hover svg {
+            stroke: white;
+        }
+
+        .measure-btn.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .measure-btn.active svg {
+            stroke: white;
+        }
+
+        #measure-clear-btn {
+            width: 36px;
+            height: 36px;
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+
+        #measure-clear-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: white;
+        }
+
+        #measure-clear-btn:hover {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        .measure-toolbar {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            z-index: 1001;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+            display: none;
+            gap: 12px;
+            flex-direction: column;
+            min-width: 220px;
+        }
+
+        .measure-toolbar.active {
+            display: flex;
+        }
+
+        .measure-info {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            padding: 10px 14px;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid var(--accent-blue);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .measure-instruction {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .measure-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .measure-action-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .measure-finish {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+        }
+
+        .measure-cancel {
+            background: #ef4444;
+            color: white;
+        }
+
+        .measure-calculate {
+            background: linear-gradient(135deg, var(--accent-orange), #ea580c);
+            color: white;
+        }
+
+        /* Measurement markers & labels */
+        .measure-marker {
+            width: 14px;
+            height: 14px;
+            background: var(--accent-blue);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 12px rgba(59, 130, 246, 0.6);
+        }
+
+        .measure-marker-first {
+            background: #22c55e;
+            box-shadow: 0 2px 12px rgba(34, 197, 94, 0.6);
+        }
+
+        .measure-label {
+            background: var(--accent-blue);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+            white-space: nowrap;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .measure-total-label {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        /* Calculator Modal */
+        .calc-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .calc-modal.active {
+            display: flex;
+        }
+
+        .calc-modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 520px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .calc-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+
+        .calc-modal-header h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .calc-modal-header h3 svg {
+            color: var(--accent-blue-light);
+        }
+
+        .calc-modal-close {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+        }
+
+        .calc-modal-close:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        .calc-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 6px;
+            border-radius: 14px;
+        }
+
+        .calc-tab {
+            flex: 1;
+            padding: 14px 18px;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calc-tab.active {
+            background: var(--accent-blue);
+            color: white;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+        }
+
+        .calc-panel {
+            display: none;
+        }
+
+        .calc-panel.active {
+            display: block;
+        }
+
+        .calc-input-group {
+            margin-bottom: 20px;
+        }
+
+        .calc-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .calc-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .calc-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .calc-input-suffix {
+            position: relative;
+        }
+
+        .calc-input-suffix input {
+            padding-right: 65px;
+        }
+
+        .calc-input-suffix-text {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .calc-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .calc-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
+        }
+
+        .calc-result {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2));
+            border: 1px solid var(--accent-blue);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 24px;
+            display: none;
+        }
+
+        .calc-result.active {
+            display: block;
+        }
+
+        .calc-result-label {
+            font-size: 0.85rem;
+            color: var(--accent-blue-light);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .calc-result-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.2rem;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .calc-result-details {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+            line-height: 1.8;
+        }
+
+        .calc-info {
+            background: rgba(251, 191, 36, 0.1);
+            border-left: 4px solid var(--accent-yellow);
+            padding: 14px 18px;
+            border-radius: 0 12px 12px 0;
+            margin-bottom: 20px;
+        }
+
+        .calc-info-text {
+            font-size: 0.85rem;
+            color: var(--accent-yellow);
+            line-height: 1.6;
+        }
+
+        /* Hide default Geocoder */
+        .leaflet-control-geocoder {
+            display: none !important;
+        }
+
+        /* Fullscreen Button */
+        .fullscreen-control {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+
+        .fullscreen-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .fullscreen-btn:hover {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .fullscreen-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: #f1f5f9;
+        }
+
+        .fullscreen-btn:hover svg {
+            stroke: white;
+        }
+
+        /* Map Fullscreen Mode */
+        .radar-wrapper.map-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            z-index: 9999 !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .radar-wrapper.map-fullscreen .map-container {
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 100vh !important;
+            border-radius: 0 !important;
+        }
+
+        .radar-wrapper.map-fullscreen #mapid {
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 100vh !important;
+        }
+
+        /* Native Fullscreen Mode */
+        .map-container:fullscreen,
+        .map-container:-webkit-full-screen,
+        .map-container:-moz-full-screen,
+        .map-container:-ms-fullscreen {
+            width: 100% !important;
+            height: 100% !important;
+            background: var(--bg-primary);
+        }
+
+        .map-container:fullscreen #mapid,
+        .map-container:-webkit-full-screen #mapid,
+        .map-container:-moz-full-screen #mapid,
+        .map-container:-ms-fullscreen #mapid {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Custom Search Button */
+        .search-control {
+            position: absolute;
+            top: 132px;
+            left: 10px;
+            z-index: 1000;
+        }
+
+        .search-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-btn:hover {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .search-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: #f1f5f9;
+        }
+
+        .search-btn:hover svg {
+            stroke: white;
+        }
+
+        .search-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        /* Search Box */
+        .search-box {
+            position: absolute;
+            top: 132px;
+            left: 52px;
+            z-index: 1001;
+            display: none;
+        }
+
+        .search-box.active {
+            display: block;
+        }
+
+        .search-box input {
+            width: 220px;
+            height: 36px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 10px;
+            padding: 0 12px;
+            color: #f1f5f9;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            outline: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-box input:focus {
+            border-color: #3b82f6;
+        }
+
+        .search-box input::placeholder {
+            color: #64748b;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 40px;
+            left: 0;
+            width: 220px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 10px;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-results.active {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 10px 12px;
+            color: #f1f5f9;
+            font-size: 13px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background: #3b82f6;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                height: 70px;
+                padding: 0 1rem;
+            }
+
+            .navbar-brand .title h1 {
+                font-size: 1.15rem;
+            }
+
+            .current-time {
+                font-size: 0.9rem;
+                padding: 8px 14px;
+            }
+
+            .main-container {
+                margin-top: 85px;
+                padding: 16px;
+            }
+
+            .card-body {
+                padding: 20px;
+            }
+
+            .weather-stats-grid {
+                gap: 12px;
+            }
+
+            .stat-card {
+                padding: 14px;
+            }
+
+            .stat-card-content {
+                gap: 12px;
+            }
+
+            .stat-chart {
+                width: 60px;
+                height: 60px;
+            }
+
+            .stat-label {
+                font-size: 0.65rem;
+                letter-spacing: 0.5px;
+            }
+
+            .stat-value {
+                font-size: 1.3rem;
+            }
+
+            .stat-value span {
+                font-size: 0.75rem;
+            }
+
+            .map-container {
+                height: 500px !important;
+            }
+
+            .map-controls {
+                padding: 14px 18px;
+            }
+
+            .btn-icon {
+                min-width: 48px;
+                min-height: 48px;
+                padding: 12px;
+            }
+
+            .btn-play {
+                min-height: 48px;
+                padding: 12px 20px;
+            }
+
+            .detail-card {
+                padding: 14px;
+                gap: 12px;
+            }
+
+            .detail-icon {
+                width: 40px;
+                height: 40px;
+            }
+
+            .detail-icon svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            .detail-label {
+                font-size: 0.65rem;
+            }
+
+            .detail-value {
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-card-content {
+                gap: 10px;
+            }
+
+            .stat-chart {
+                width: 50px;
+                height: 50px;
+            }
+
+            .stat-label {
+                font-size: 0.6rem;
+                margin-bottom: 4px;
+            }
+
+            .stat-value {
+                font-size: 1.1rem;
+            }
+
+            .stat-value span {
+                font-size: 0.65rem;
+            }
+
+            .detail-card {
+                padding: 12px;
+                gap: 10px;
+            }
+
+            .detail-icon {
+                width: 36px;
+                height: 36px;
+                border-radius: 10px;
+            }
+
+            .detail-icon svg {
+                width: 18px;
+                height: 18px;
+            }
+
+            .detail-value {
+                font-size: 0.95rem;
+            }
+        }
+
+        /* Animation for data updates */
+        @keyframes value-update {
+            0% { opacity: 0.5; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.02); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .value-updated {
+            animation: value-update 0.5s ease-out;
+        }
+
+        /* Leaflet overrides for smooth transitions */
+        .leaflet-tile-pane {
+            z-index: 200 !important;
+        }
+
+        .leaflet-overlay-pane {
+            z-index: 400 !important;
+        }
+
+        .leaflet-marker-pane {
+            z-index: 600 !important;
+        }
+
+        .leaflet-layer {
+            transition: opacity 0.4s ease !important;
+        }
+
+        .leaflet-control-container {
+            pointer-events: none !important;
+        }
+
+        .leaflet-control {
+            pointer-events: auto !important;
+        }
+    </style>
 </head>
+<body>
 
-<body class="dark-mode">
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 30px; height: 30px;">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="6" opacity="0.7"/>
+                <circle cx="12" cy="12" r="2"/>
+                <line x1="12" y1="2" x2="12" y2="6"/>
+                <line x1="12" y1="18" x2="12" y2="22"/>
+                <line x1="2" y1="12" x2="6" y2="12"/>
+                <line x1="18" y1="12" x2="22" y2="12"/>
+            </svg>
+        </div>
+        <div class="title">
+            <h1>Weather Radar System</h1>
+        </div>
+    </div>
+    <div class="current-time">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="current-time-display">--:--:--</span>
+    </div>
+</nav>
 
-<div id="map"></div>
-<div class="update-info" id="updateInfo">⏳ กำลังโหลดเรดาร์...</div>
+<!-- Main Container -->
+<div class="main-container">
+    <!-- METAR Section -->
+    <div class="card">
+        <div class="card-header">
+            <h2>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                สภาพอากาศปัจจุบัน (METAR) - VTUD
+            </h2>
+        </div>
 
-<!-- Leaflet JS -->
+        <div class="card-body">
+            <div id="metar-loading" class="loading-state">
+                <div class="loading-spinner"></div>
+                <span>กำลังโหลดข้อมูลสภาพอากาศ...</span>
+            </div>
+            
+            <!-- Weather Stats -->
+            <div id="metar-charts" class="weather-stats-grid" style="display: none;">
+                <div class="stat-card temp">
+                    <div class="stat-card-content">
+                        <div class="stat-chart">
+                            <canvas id="tempChart"></canvas>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">อุณหภูมิ</div>
+                            <div class="stat-value" id="temp-display">--<span>°C</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card humidity">
+                    <div class="stat-card-content">
+                        <div class="stat-chart">
+                            <canvas id="humidityChart"></canvas>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">ความชื้น</div>
+                            <div class="stat-value" id="humidity-display">--<span>%</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card pressure">
+                    <div class="stat-card-content">
+                        <div class="stat-chart">
+                            <canvas id="pressureChart"></canvas>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">ความกดอากาศ</div>
+                            <div class="stat-value" id="pressure-display">--<span>hPa</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card wind">
+                    <div class="stat-card-content">
+                        <div class="stat-chart">
+                            <canvas id="windChart"></canvas>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">ความเร็วลม</div>
+                            <div class="stat-value" id="wind-display">--<span>kt</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weather Details -->
+            <div id="metar-info" class="weather-details-grid" style="display: none;">
+                <div class="detail-card">
+                    <div class="detail-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                    </div>
+                    <div class="detail-info">
+                        <div class="detail-label">จุดน้ำค้าง</div>
+                        <div class="detail-value" id="dewpoint-value">--°C</div>
+                    </div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 0 20"/><path d="M12 12L12 6"/></svg>
+                    </div>
+                    <div class="detail-info">
+                        <div class="detail-label">ทิศทางลม</div>
+                        <div class="detail-value" id="wind-dir-value">--°</div>
+                    </div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                    <div class="detail-info">
+                        <div class="detail-label">ทัศนวิสัย</div>
+                        <div class="detail-value" id="visibility-value">--</div>
+                    </div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M5.5 5.5l2.5 2.5"/><path d="M16 8l2.5-2.5"/><path d="M5.5 18.5l2.5-2.5"/><path d="M16 16l2.5 2.5"/><circle cx="12" cy="12" r="4"/></svg>
+                    </div>
+                    <div class="detail-info">
+                        <div class="detail-label">QNH</div>
+                        <div class="detail-value" id="qnh-value">-- hPa</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- METAR Raw -->
+            <div class="metar-raw-display" id="metar-raw-display" style="display: none;">
+                <div class="metar-raw-text" id="metar-raw-text">--</div>
+            </div>
+        </div>
+
+        <div class="update-info" id="metar-update-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.12-5.83"/><polyline points="21 3 21 12 12 12"/></svg>
+            <span>อัปเดทอัตโนมัติทุก 30 นาที | ครั้งถัดไป: <span class="countdown" id="metar-countdown">--:--</span></span>
+        </div>
+    </div>
+
+    <!-- Radar Section -->
+    <div class="card">
+        <div class="card-header">
+            <h2>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                เรดาร์ฝน (Weather Radar)
+            </h2>
+        </div>
+
+        <div class="radar-wrapper">
+            <div class="map-container">
+                <div id="mapid">
+                    <!-- Fullscreen Button -->
+                    <div class="fullscreen-control">
+                        <button class="fullscreen-btn" id="fullscreen-btn" title="เต็มหน้าจอ">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+                                <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+                                <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+                                <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Measurement Tool -->
+                    <div class="measure-control">
+                        <button class="measure-btn" id="measure-btn" title="วัดระยะทาง">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/>
+                                <path d="m14.5 12.5 2-2"/>
+                                <path d="m11.5 9.5 2-2"/>
+                                <path d="m8.5 6.5 2-2"/>
+                                <path d="m17.5 15.5 2-2"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <button class="measure-btn" id="measure-clear-btn" title="ลบเส้นวัด" style="position: absolute; top: 174px; left: 10px; z-index: 1000; display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- Search Control -->
+                    <div class="search-control">
+                        <button class="search-btn" id="search-btn" title="ค้นหาสถานที่">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="search-box" id="search-box">
+                        <input type="text" id="search-input" placeholder="ค้นหาสถานที่...">
+                        <div class="search-results" id="search-results"></div>
+                    </div>
+                    
+                    <div class="measure-toolbar" id="measure-toolbar">
+                        <div class="measure-instruction">คลิกบนแผนที่เพื่อวางจุด</div>
+                        <div class="measure-info" id="measure-info">ระยะทาง: 0.00 กม.</div>
+                        <div class="measure-actions">
+                            <button class="measure-action-btn measure-finish" id="measure-finish">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><polyline points="20 6 9 17 4 12"/></svg>
+                                เสร็จ
+                            </button>
+                            <button class="measure-action-btn measure-cancel" id="measure-cancel">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                ยกเลิก
+                            </button>
+                        </div>
+                        <button class="measure-action-btn measure-calculate" id="measure-calculate" style="width: 100%; margin-top: 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                                <rect x="4" y="2" width="16" height="20" rx="2"/>
+                                <line x1="8" y1="6" x2="16" y2="6"/>
+                                <line x1="16" y1="14" x2="16" y2="18"/>
+                                <path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/>
+                                <path d="M12 14h.01"/><path d="M8 14h.01"/>
+                                <path d="M12 18h.01"/><path d="M8 18h.01"/>
+                            </svg>
+                            คำนวณเวลามาถึง
+                        </button>
+                    </div>
+                    
+                    <div class="map-controls">
+                        <div id="timestamp" class="timestamp-display">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span id="timestamp-text">กำลังโหลด...</span>
+                        </div>
+                        <div class="playback-controls">
+                            <button class="btn btn-icon" id="btn-prev" title="ย้อนกลับ">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                            </button>
+                            <button class="btn btn-play" id="btn-play">
+                                <svg id="play-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                <span id="play-text">เล่น</span>
+                            </button>
+                            <button class="btn btn-icon" id="btn-next" title="ถัดไป">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="update-info" id="radar-update-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.12-5.83"/><polyline points="21 3 21 12 12 12"/></svg>
+            <span>อัปเดทอัตโนมัติทุก 10 นาที | ครั้งถัดไป: <span class="countdown" id="radar-countdown">--:--</span></span>
+        </div>
+    </div>
+</div>
+
+<!-- Calculator Modal -->
+<div class="calc-modal" id="calc-modal">
+    <div class="calc-modal-content">
+        <div class="calc-modal-header">
+            <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;">
+                    <rect x="4" y="2" width="16" height="20" rx="2"/>
+                    <line x1="8" y1="6" x2="16" y2="6"/>
+                    <line x1="16" y1="14" x2="16" y2="18"/>
+                    <path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/>
+                    <path d="M12 14h.01"/><path d="M8 14h.01"/>
+                    <path d="M12 18h.01"/><path d="M8 18h.01"/>
+                </svg>
+                คำนวณเวลาเมฆ/ฝนมาถึง
+            </h3>
+            <button class="calc-modal-close" id="calc-modal-close">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <div class="calc-tabs">
+            <button class="calc-tab active" data-tab="method1">วิธีที่ 1: ระยะทาง + ความเร็วลม</button>
+            <button class="calc-tab" data-tab="method2">วิธีที่ 2: การเคลื่อนที่ 10 นาที</button>
+        </div>
+
+        <!-- Method 1 -->
+        <div class="calc-panel active" id="calc-method1">
+            <div class="calc-info">
+                <p class="calc-info-text">ใส่ระยะทางที่วัดได้จากแผนที่และความเร็วลมเฉลี่ยของเมฆ</p>
+            </div>
+
+            <div class="calc-input-group">
+                <label class="calc-label">ระยะทางจากเมฆถึงสนามบิน</label>
+                <div class="calc-input-suffix">
+                    <input type="number" class="calc-input" id="method1-distance" placeholder="0.00" step="0.01" min="0">
+                    <span class="calc-input-suffix-text">กม.</span>
+                </div>
+            </div>
+
+            <div class="calc-input-group">
+                <label class="calc-label">ความเร็วลม (ความเร็วเมฆ)</label>
+                <div class="calc-input-suffix">
+                    <input type="number" class="calc-input" id="method1-speed" placeholder="0" min="0">
+                    <span class="calc-input-suffix-text">กม./ชม.</span>
+                </div>
+            </div>
+
+            <button class="calc-btn" id="calc-method1-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><polyline points="20 6 9 17 4 12"/></svg>
+                คำนวณ
+            </button>
+
+            <div class="calc-result" id="calc-method1-result">
+                <div class="calc-result-label">เวลาที่เมฆจะมาถึง</div>
+                <div class="calc-result-value" id="calc-method1-value">--</div>
+                <div class="calc-result-details" id="calc-method1-details"></div>
+            </div>
+        </div>
+
+        <!-- Method 2 -->
+        <div class="calc-panel" id="calc-method2">
+            <div class="calc-info">
+                <p class="calc-info-text">วัดระยะทางที่เมฆเคลื่อนที่ได้ภายใน 10 นาที และระยะทางที่ต้องการคำนวณ</p>
+            </div>
+
+            <div class="calc-input-group">
+                <label class="calc-label">ระยะทางที่เมฆเคลื่อนที่ใน 10 นาที</label>
+                <div class="calc-input-suffix">
+                    <input type="number" class="calc-input" id="method2-movement" placeholder="0.00" step="0.01" min="0">
+                    <span class="calc-input-suffix-text">กม.</span>
+                </div>
+            </div>
+
+            <div class="calc-input-group">
+                <label class="calc-label">ระยะทางจากจุดปัจจุบันถึงจุดสิ้นสุด</label>
+                <div class="calc-input-suffix">
+                    <input type="number" class="calc-input" id="method2-distance" placeholder="0.00" step="0.01" min="0">
+                    <span class="calc-input-suffix-text">กม.</span>
+                </div>
+            </div>
+
+            <button class="calc-btn" id="calc-method2-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><polyline points="20 6 9 17 4 12"/></svg>
+                คำนวณ
+            </button>
+
+            <div class="calc-result" id="calc-method2-result">
+                <div class="calc-result-label">เวลาที่เมฆจะมาถึง</div>
+                <div class="calc-result-value" id="calc-method2-value">--</div>
+                <div class="calc-result-details" id="calc-method2-details"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leaflet JavaScript -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
 <script>
-/* =======================
-   MAP INIT (DARK MODE)
-======================= */
-const darkMap = L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-  {
-    attribution: "&copy; CARTO",
-    subdomains: "abcd",
-    maxZoom: 19
-  }
-);
+(function() {
+    'use strict';
+    
+    // ==================== API Configuration ====================
+    const API_CONFIG = {
+        METAR: {
+            endpoint: 'https://api.checkwx.com/metar/VTUD/decoded',
+            key: 'd27b39a0a69e464c86bffd72dc',
+            updateInterval: 30
+        },
+        RADAR: {
+            rainviewer: 'https://api.rainviewer.com/public/weather-maps.json',
+            updateInterval: 10
+        }
+    };
 
-const map = L.map("map", {
-  center: [17.4, 102.8], // Thailand
-  zoom: 7,
-  layers: [darkMap]
-});
+    const UDON_THANI_AIRPORT = [17.3866, 102.7882];
 
-/* =======================
-   RAINVIEWER RADAR
-   Universal Blue
-======================= */
-let rainLayer = null;
-let currentTime = null;
+    console.log('🚀 Weather Radar System Starting...');
 
-/* Fetch latest radar timestamp */
-async function fetchRainviewerTime() {
-  const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
-  const data = await res.json();
-  return data.radar.past[data.radar.past.length - 1].time;
-}
+    // ==================== Data Cache for Background Updates ====================
+    let pendingMetarData = null;
+    let currentMetarData = null;
+    let isMetarUpdating = false;
 
-/* Update radar without reload */
-function updateRadar(time) {
-  if (rainLayer) {
-    map.removeLayer(rainLayer);
-  }
+    // ==================== Chart Configuration ====================
+    const chartColors = {
+        temp: { 
+            main: '#3b82f6',
+            gradient: ['#60a5fa', '#3b82f6'],
+            bg: 'rgba(59, 130, 246, 0.1)' 
+        },
+        humidity: { 
+            main: '#3b82f6',
+            gradient: ['#60a5fa', '#3b82f6'],
+            bg: 'rgba(59, 130, 246, 0.1)' 
+        },
+        pressure: { 
+            main: '#3b82f6',
+            gradient: ['#60a5fa', '#3b82f6'],
+            bg: 'rgba(59, 130, 246, 0.1)' 
+        },
+        wind: { 
+            main: '#3b82f6',
+            gradient: ['#60a5fa', '#3b82f6'],
+            bg: 'rgba(59, 130, 246, 0.1)' 
+        }
+    };
 
-  rainLayer = L.tileLayer(
-    `https://tilecache.rainviewer.com/v2/radar/${time}/256/{z}/{x}/{y}/2/1_1.png`,
-    {
-      opacity: 0.8,
-      zIndex: 400
+    let charts = {};
+    let lastMetarValues = {
+        temp: null,
+        humidity: null,
+        pressure: null,
+        windSpeed: null
+    };
+
+    function createDonutChart(canvasId, value, max, colors) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, 100);
+        gradient.addColorStop(0, colors.gradient[0]);
+        gradient.addColorStop(1, colors.gradient[1]);
+        
+        if (charts[canvasId]) {
+            charts[canvasId].destroy();
+        }
+        
+        charts[canvasId] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [value, Math.max(0, max - value)],
+                    backgroundColor: [gradient, colors.bg],
+                    borderWidth: 0,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                cutout: '78%',
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                animation: {
+                    animateRotate: true,
+                    animateScale: false,
+                    duration: 600,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
     }
-  );
 
-  rainLayer.addTo(map);
-  currentTime = time;
+    // ==================== Smooth Value Update ====================
+    function updateValueWithAnimation(elementId, newValue, unit = '') {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        
+        element.classList.add('value-updated');
+        element.innerHTML = newValue + (unit ? `<span>${unit}</span>` : '');
+        
+        setTimeout(() => {
+            element.classList.remove('value-updated');
+        }, 500);
+    }
 
-  const date = new Date(time * 1000);
-  document.getElementById("updateInfo").innerText =
-    "📡 Radar update: " + date.toLocaleString("th-TH");
-}
+    // ==================== Initialize Map ====================
+    const map = L.map('mapid', {
+        center: UDON_THANI_AIRPORT,
+        zoom: 10,
+        zoomControl: true,
+        maxZoom: 22,
+        preferCanvas: true,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        touchZoom: true,
+        dragging: true,
+        zoomAnimation: false,
+        fadeAnimation: false,
+        markerZoomAnimation: false
+    });
 
-/* =======================
-   INITIAL LOAD
-======================= */
-fetchRainviewerTime().then(time => {
-  updateRadar(time);
-});
+    // Dark Map Tile - CartoDB Dark Matter
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        maxZoom: 22,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+        keepBuffer: 2
+    }).addTo(map);
 
-/* =======================
-   AUTO UPDATE (5 MIN)
-   Background only
-======================= */
-setInterval(async () => {
-  const newTime = await fetchRainviewerTime();
-  if (newTime !== currentTime) {
-    updateRadar(newTime);
-  }
-}, 300000); // 5 minutes
+    function invalidateMap() {
+        setTimeout(() => map.invalidateSize(), 100);
+        setTimeout(() => map.invalidateSize(), 300);
+        setTimeout(() => map.invalidateSize(), 500);
+        setTimeout(() => map.invalidateSize(), 1000);
+    }
+    
+    invalidateMap();
+    
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => map.invalidateSize(), 250);
+    });
+    
+    window.addEventListener('load', () => invalidateMap());
+
+    let targetZoom = 10;
+    let targetCenter = UDON_THANI_AIRPORT;
+    let isNavigating = false;
+
+    // ==================== Airport Marker ====================
+    const airportIcon = L.divIcon({
+        className: 'custom-airport-marker',
+        html: '<div style="background: linear-gradient(135deg, #3b82f6, #2563eb); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(59, 130, 246, 0.6); border: 3px solid rgba(255,255,255,0.8);"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></div>',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+    });
+
+    L.marker(UDON_THANI_AIRPORT, { icon: airportIcon }).addTo(map)
+        .bindPopup('<div style="font-family: Outfit, sans-serif; text-align: center; color: #0f172a; padding: 4px;"><strong>Udon Thani International Airport</strong><br><span style="color: #3b82f6; font-weight: 600;">VTUD</span></div>');
+
+    // ==================== Circles ====================
+    L.circle(UDON_THANI_AIRPORT, {
+        color: '#f87171',
+        fillColor: '#f87171',
+        fillOpacity: 0.05,
+        radius: 8000,
+        weight: 2
+    }).addTo(map);
+
+    L.circle(UDON_THANI_AIRPORT, {
+        color: '#60a5fa',
+        fillColor: '#60a5fa',
+        fillOpacity: 0.05,
+        radius: 16000,
+        weight: 2
+    }).addTo(map);
+
+    const radiusInDegrees16 = 16 / 111;
+    L.polyline([
+        [UDON_THANI_AIRPORT[0] + radiusInDegrees16, UDON_THANI_AIRPORT[1]],
+        [UDON_THANI_AIRPORT[0] - radiusInDegrees16, UDON_THANI_AIRPORT[1]]
+    ], { color: '#475569', weight: 1, opacity: 0.5, dashArray: '5, 5' }).addTo(map);
+
+    L.polyline([
+        [UDON_THANI_AIRPORT[0], UDON_THANI_AIRPORT[1] - radiusInDegrees16],
+        [UDON_THANI_AIRPORT[0], UDON_THANI_AIRPORT[1] + radiusInDegrees16]
+    ], { color: '#475569', weight: 1, opacity: 0.5, dashArray: '5, 5' }).addTo(map);
+
+    function addCircleLabels() {
+        const offset8 = 8 / 111;
+        const offset16 = 16 / 111;
+        
+        const positions = [
+            [offset8, 0, 'red', '8 km', [20, 10]],
+            [-offset8, 0, 'red', '8 km', [-20, 10]],
+            [0, offset8, 'red', '8 km', [-10, 20]],
+            [0, -offset8, 'red', '8 km', [-10, -5]],
+            [offset16, 0, 'blue', '16 km', [25, 10]],
+            [-offset16, 0, 'blue', '16 km', [-25, 10]],
+            [0, offset16, 'blue', '16 km', [-10, 25]],
+            [0, -offset16, 'blue', '16 km', [-10, -5]]
+        ];
+        
+        positions.forEach(pos => {
+            const icon = L.divIcon({
+                className: 'circle-label ' + pos[2],
+                html: pos[3],
+                iconSize: [50, 20],
+                iconAnchor: pos[4]
+            });
+            L.marker([UDON_THANI_AIRPORT[0] + pos[0], UDON_THANI_AIRPORT[1] + pos[1]], { icon: icon }).addTo(map);
+        });
+    }
+    addCircleLabels();
+
+    // ==================== Custom Search ====================
+    const searchBtn = document.getElementById('search-btn');
+    const searchBox = document.getElementById('search-box');
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    let searchTimeout;
+
+    searchBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        searchBtn.classList.toggle('active');
+        searchBox.classList.toggle('active');
+        
+        if (searchBox.classList.contains('active')) {
+            searchInput.focus();
+        }
+    });
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            searchResults.classList.remove('active');
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        searchResults.innerHTML = data.map(item => 
+                            `<div class="search-result-item" data-lat="${item.lat}" data-lon="${item.lon}">${item.display_name}</div>`
+                        ).join('');
+                        searchResults.classList.add('active');
+                    } else {
+                        searchResults.classList.remove('active');
+                    }
+                })
+                .catch(err => {
+                    console.error('Search error:', err);
+                    searchResults.classList.remove('active');
+                });
+        }, 300);
+    });
+
+    searchResults.addEventListener('click', function(e) {
+        if (e.target.classList.contains('search-result-item')) {
+            const lat = parseFloat(e.target.dataset.lat);
+            const lon = parseFloat(e.target.dataset.lon);
+            
+            map.setView([lat, lon], 12);
+            
+            // Add marker
+            L.marker([lat, lon]).addTo(map)
+                .bindPopup(e.target.textContent)
+                .openPopup();
+            
+            searchBox.classList.remove('active');
+            searchBtn.classList.remove('active');
+            searchInput.value = '';
+            searchResults.classList.remove('active');
+        }
+    });
+
+    // Close search when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchBtn.contains(e.target) && !searchBox.contains(e.target)) {
+            searchBox.classList.remove('active');
+            searchBtn.classList.remove('active');
+            searchResults.classList.remove('active');
+        }
+    });
+
+    // ==================== Fullscreen Toggle ====================
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+    const radarWrapper = document.querySelector('.radar-wrapper');
+    const mapContainer = document.querySelector('.map-container');
+    let isFullscreen = false;
+
+    function invalidateMapSize() {
+        setTimeout(() => map.invalidateSize(), 50);
+        setTimeout(() => map.invalidateSize(), 100);
+        setTimeout(() => map.invalidateSize(), 200);
+        setTimeout(() => map.invalidateSize(), 500);
+        setTimeout(() => map.invalidateSize(), 1000);
+    }
+
+    function enterFullscreen() {
+        isFullscreen = true;
+        
+        // Try native fullscreen first
+        if (mapContainer.requestFullscreen) {
+            mapContainer.requestFullscreen();
+        } else if (mapContainer.webkitRequestFullscreen) {
+            mapContainer.webkitRequestFullscreen();
+        } else if (mapContainer.msRequestFullscreen) {
+            mapContainer.msRequestFullscreen();
+        } else {
+            // Fallback to CSS fullscreen
+            radarWrapper.classList.add('map-fullscreen');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        fullscreenBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 14h6v6"/>
+                <path d="M20 10h-6V4"/>
+                <path d="M14 10l7-7"/>
+                <path d="M3 21l7-7"/>
+            </svg>
+        `;
+        fullscreenBtn.title = 'ออกจากเต็มหน้าจอ';
+        invalidateMapSize();
+    }
+
+    function exitFullscreen() {
+        isFullscreen = false;
+        
+        if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+        
+        radarWrapper.classList.remove('map-fullscreen');
+        document.body.style.overflow = '';
+        
+        fullscreenBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+                <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+                <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+                <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+            </svg>
+        `;
+        fullscreenBtn.title = 'เต็มหน้าจอ';
+        invalidateMapSize();
+    }
+
+    fullscreenBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (isFullscreen) {
+            exitFullscreen();
+        } else {
+            enterFullscreen();
+        }
+    });
+
+    // Listen for fullscreen change events
+    document.addEventListener('fullscreenchange', function() {
+        if (!document.fullscreenElement) {
+            isFullscreen = false;
+            fullscreenBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+                    <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+                </svg>
+            `;
+            fullscreenBtn.title = 'เต็มหน้าจอ';
+        }
+        invalidateMapSize();
+    });
+
+    document.addEventListener('webkitfullscreenchange', function() {
+        if (!document.webkitFullscreenElement) {
+            isFullscreen = false;
+            fullscreenBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+                    <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+                </svg>
+            `;
+            fullscreenBtn.title = 'เต็มหน้าจอ';
+        }
+        invalidateMapSize();
+    });
+
+    // ==================== Measurement Tool ====================
+    let isMeasuring = false;
+    let measurePoints = [];
+    let measureMarkers = [];
+    let measureLines = [];
+    let measureLabels = [];
+    let totalDistance = 0;
+
+    function formatDistance(meters) {
+        if (meters < 1000) {
+            return meters.toFixed(0) + ' ม.';
+        } else {
+            return (meters / 1000).toFixed(2) + ' กม.';
+        }
+    }
+
+    function calculateDistance(latlng1, latlng2) {
+        return map.distance(latlng1, latlng2);
+    }
+
+    function startMeasuring() {
+        isMeasuring = true;
+        measurePoints = [];
+        totalDistance = 0;
+        
+        map.dragging.disable();
+        map.doubleClickZoom.disable();
+        
+        document.getElementById('measure-btn').classList.add('active');
+        document.getElementById('measure-toolbar').classList.add('active');
+        document.getElementById('measure-info').textContent = 'ระยะทาง: 0.00 กม.';
+        document.getElementById('mapid').style.cursor = 'crosshair';
+    }
+
+    function stopMeasuring(save = false) {
+        isMeasuring = false;
+        
+        map.dragging.enable();
+        map.doubleClickZoom.enable();
+        
+        document.getElementById('measure-btn').classList.remove('active');
+        document.getElementById('measure-toolbar').classList.remove('active');
+        document.getElementById('mapid').style.cursor = '';
+        
+        if (!save) {
+            clearMeasurements();
+        }
+    }
+
+    function clearMeasurements() {
+        measureMarkers.forEach(marker => map.removeLayer(marker));
+        measureMarkers = [];
+        
+        measureLines.forEach(line => map.removeLayer(line));
+        measureLines = [];
+        
+        measureLabels.forEach(label => map.removeLayer(label));
+        measureLabels = [];
+        
+        measurePoints = [];
+        totalDistance = 0;
+    }
+
+    function addMeasurePoint(latlng) {
+        measurePoints.push(latlng);
+        
+        const markerIcon = L.divIcon({
+            className: measurePoints.length === 1 ? 'measure-marker measure-marker-first' : 'measure-marker',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+        });
+        
+        const marker = L.marker(latlng, { icon: markerIcon }).addTo(map);
+        measureMarkers.push(marker);
+        
+        if (measurePoints.length > 1) {
+            const prevPoint = measurePoints[measurePoints.length - 2];
+            const currPoint = latlng;
+            
+            const line = L.polyline([prevPoint, currPoint], {
+                color: '#3b82f6',
+                weight: 4,
+                opacity: 0.9,
+                dashArray: '10, 5',
+                lineCap: 'round',
+                lineJoin: 'round'
+            }).addTo(map);
+            measureLines.push(line);
+            
+            const segmentDistance = calculateDistance(prevPoint, currPoint);
+            totalDistance += segmentDistance;
+            
+            const midLat = (prevPoint.lat + currPoint.lat) / 2;
+            const midLng = (prevPoint.lng + currPoint.lng) / 2;
+            
+            const labelIcon = L.divIcon({
+                className: 'measure-label',
+                html: formatDistance(segmentDistance),
+                iconSize: null,
+                iconAnchor: [0, 0]
+            });
+            
+            const label = L.marker([midLat, midLng], { icon: labelIcon }).addTo(map);
+            measureLabels.push(label);
+            
+            document.getElementById('measure-info').textContent = 'ระยะทางรวม: ' + formatDistance(totalDistance);
+        }
+    }
+
+    document.getElementById('measure-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (!isMeasuring) {
+            startMeasuring();
+        } else {
+            stopMeasuring(false);
+        }
+    });
+
+    document.getElementById('measure-finish').addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (measurePoints.length >= 2) {
+            const lastPoint = measurePoints[measurePoints.length - 1];
+            const totalLabelIcon = L.divIcon({
+                className: 'measure-label measure-total-label',
+                html: '📏 รวม: ' + formatDistance(totalDistance),
+                iconSize: null,
+                iconAnchor: [-10, -10]
+            });
+            
+            const totalLabel = L.marker(lastPoint, { icon: totalLabelIcon }).addTo(map);
+            measureLabels.push(totalLabel);
+            
+            stopMeasuring(true);
+            document.getElementById('measure-clear-btn').style.display = 'block';
+        }
+    });
+
+    document.getElementById('measure-cancel').addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        stopMeasuring(false);
+    });
+
+    document.getElementById('measure-clear-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        clearMeasurements();
+        this.style.display = 'none';
+    });
+
+    map.on('click', function(e) {
+        if (isMeasuring) {
+            addMeasurePoint(e.latlng);
+        }
+    });
+
+    // ==================== Calculator Modal ====================
+    const calcModal = document.getElementById('calc-modal');
+    const calcModalClose = document.getElementById('calc-modal-close');
+    const calcCalculateBtn = document.getElementById('measure-calculate');
+    const calcTabs = document.querySelectorAll('.calc-tab');
+    const calcPanels = document.querySelectorAll('.calc-panel');
+
+    calcCalculateBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (totalDistance > 0) {
+            const distanceKm = totalDistance / 1000;
+            document.getElementById('method1-distance').value = distanceKm.toFixed(2);
+            document.getElementById('method2-distance').value = distanceKm.toFixed(2);
+        }
+        
+        calcModal.classList.add('active');
+    });
+
+    calcModalClose.addEventListener('click', function() {
+        calcModal.classList.remove('active');
+    });
+
+    calcModal.addEventListener('click', function(e) {
+        if (e.target === calcModal) {
+            calcModal.classList.remove('active');
+        }
+    });
+
+    calcTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetTab = this.dataset.tab;
+            
+            calcTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            calcPanels.forEach(panel => {
+                panel.classList.toggle('active', panel.id === `calc-${targetTab}`);
+            });
+        });
+    });
+
+    document.getElementById('calc-method1-btn').addEventListener('click', function() {
+        const distance = parseFloat(document.getElementById('method1-distance').value);
+        const speed = parseFloat(document.getElementById('method1-speed').value);
+        
+        if (!distance || !speed || distance <= 0 || speed <= 0) {
+            alert('กรุณาใส่ระยะทางและความเร็วลมที่ถูกต้อง');
+            return;
+        }
+        
+        const timeHours = distance / speed;
+        const timeMinutes = timeHours * 60;
+        
+        let resultText = '';
+        if (timeHours >= 1) {
+            const hours = Math.floor(timeHours);
+            const minutes = Math.round((timeHours - hours) * 60);
+            resultText = `${hours} ชั่วโมง ${minutes} นาที`;
+        } else {
+            resultText = `${Math.round(timeMinutes)} นาที`;
+        }
+        
+        document.getElementById('calc-method1-value').textContent = resultText;
+        document.getElementById('calc-method1-details').innerHTML = 
+            `<strong>ระยะทาง:</strong> ${distance.toFixed(2)} กม.<br>` +
+            `<strong>ความเร็วลม:</strong> ${speed} กม./ชม.<br>` +
+            `<strong>เวลาโดยประมาณ:</strong> ${timeMinutes.toFixed(1)} นาที`;
+        document.getElementById('calc-method1-result').classList.add('active');
+    });
+
+    document.getElementById('calc-method2-btn').addEventListener('click', function() {
+        const movement = parseFloat(document.getElementById('method2-movement').value);
+        const distance = parseFloat(document.getElementById('method2-distance').value);
+        
+        if (!movement || !distance || movement <= 0 || distance <= 0) {
+            alert('กรุณาใส่ระยะทางที่ถูกต้อง');
+            return;
+        }
+        
+        const speedKmPerHour = movement / (10 / 60);
+        const timeHours = distance / speedKmPerHour;
+        const timeMinutes = timeHours * 60;
+        
+        let resultText = '';
+        if (timeHours >= 1) {
+            const hours = Math.floor(timeHours);
+            const minutes = Math.round((timeHours - hours) * 60);
+            resultText = `${hours} ชั่วโมง ${minutes} นาที`;
+        } else {
+            resultText = `${Math.round(timeMinutes)} นาที`;
+        }
+        
+        document.getElementById('calc-method2-value').textContent = resultText;
+        document.getElementById('calc-method2-details').innerHTML = 
+            `<strong>ระยะทางเคลื่อนที่ (10 นาที):</strong> ${movement.toFixed(2)} กม.<br>` +
+            `<strong>ความเร็วเฉลี่ย:</strong> ${speedKmPerHour.toFixed(1)} กม./ชม.<br>` +
+            `<strong>ระยะทางที่เหลือ:</strong> ${distance.toFixed(2)} กม.<br>` +
+            `<strong>เวลาโดยประมาณ:</strong> ${timeMinutes.toFixed(1)} นาที`;
+        document.getElementById('calc-method2-result').classList.add('active');
+    });
+
+    // ==================== RainViewer Radar ====================
+    let apiData = {};
+    let mapFrames = [];
+    let radarLayers = [];
+    let animationPosition = 0;
+    let animationTimer = false;
+    let isPlaying = false;
+    let loadingTilesCount = 0;
+    let loadedTilesCount = 0;
+    let pastFramesCount = 0;
+
+    function startLoadingTile() { loadingTilesCount++; }
+    function finishLoadingTile() { setTimeout(() => loadedTilesCount++, 250); }
+    function isTilesLoading() { return loadingTilesCount > loadedTilesCount; }
+
+    function loadRadarData() {
+        console.log('🌧️  Loading RainViewer data...');
+        document.getElementById('radar-update-info').classList.add('loading');
+        
+        fetch(API_CONFIG.RADAR.rainviewer)
+            .then(r => r.json())
+            .then(data => {
+                console.log('✅ RainViewer data loaded!');
+                apiData = data;
+                initialize(data);
+                document.getElementById('radar-update-info').classList.remove('loading');
+            })
+            .catch(err => {
+                console.error('❌ RainViewer Error:', err);
+                document.getElementById('radar-update-info').classList.remove('loading');
+            });
+    }
+
+    function initialize(api) {
+        stop();
+        
+        radarLayers.forEach(l => map.removeLayer(l));
+        mapFrames = [];
+        radarLayers = [];
+        animationPosition = 0;
+
+        if (api.radar && api.radar.past) {
+            pastFramesCount = api.radar.past.length;
+            mapFrames = api.radar.past.concat(api.radar.nowcast || []);
+            const latestIndex = api.radar.past.length - 1;
+            showFrame(latestIndex, true);
+            animationPosition = latestIndex;
+        }
+    }
+
+    function addLayer(frame) {
+        if (!radarLayers[frame.path]) {
+            const source = new L.TileLayer(
+                apiData.host + frame.path + '/256/{z}/{x}/{y}/1/1_1.png',
+                { 
+                    tileSize: 256, 
+                    opacity: 0.01, 
+                    zIndex: frame.time, 
+                    maxZoom: 22,
+                    maxNativeZoom: 8,
+                    minZoom: 0,
+                    keepBuffer: 10,
+                    updateWhenZooming: false,
+                    updateWhenIdle: true
+                }
+            );
+            source.on('loading', startLoadingTile);
+            source.on('load', finishLoadingTile);
+            radarLayers[frame.path] = source;
+        }
+        if (!map.hasLayer(radarLayers[frame.path])) {
+            map.addLayer(radarLayers[frame.path]);
+        }
+    }
+
+    function changeRadarPosition(position, preloadOnly, force) {
+        while (position >= mapFrames.length) position -= mapFrames.length;
+        while (position < 0) position += mapFrames.length;
+
+        const currentFrame = mapFrames[animationPosition];
+        const nextFrame = mapFrames[position];
+        addLayer(nextFrame);
+
+        if (preloadOnly || (isTilesLoading() && !force)) return;
+
+        animationPosition = position;
+        
+        if (radarLayers[currentFrame.path]) {
+            const currentLayer = radarLayers[currentFrame.path].getContainer();
+            if (currentLayer) {
+                currentLayer.style.transition = 'opacity 0.4s ease';
+            }
+            radarLayers[currentFrame.path].setOpacity(0);
+        }
+        
+        const nextLayer = radarLayers[nextFrame.path].getContainer();
+        if (nextLayer) {
+            nextLayer.style.transition = 'opacity 0.4s ease';
+        }
+        radarLayers[nextFrame.path].setOpacity(0.7);
+
+        const date = new Date(nextFrame.time * 1000);
+        const timeStr = date.toLocaleString('th-TH', { 
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+        });
+        
+        const isForecast = position >= pastFramesCount;
+        
+        const timestampElement = document.getElementById('timestamp-text');
+        if (isForecast) {
+            timestampElement.innerHTML = timeStr + '<span class="forecast-badge">พยากรณ์</span>';
+        } else {
+            timestampElement.innerHTML = timeStr;
+        }
+    }
+
+    function showFrame(nextPosition, force) {
+        const currentZoom = map.getZoom();
+        const currentCenter = map.getCenter();
+        
+        targetZoom = currentZoom;
+        targetCenter = currentCenter;
+        
+        changeRadarPosition(nextPosition, false, force);
+        changeRadarPosition(nextPosition + (nextPosition > animationPosition ? 1 : -1), true);
+    }
+
+    function stop() {
+        if (animationTimer) {
+            clearTimeout(animationTimer);
+            animationTimer = false;
+            isPlaying = false;
+            updatePlayButton();
+            return true;
+        }
+        return false;
+    }
+
+    function play() {
+        showFrame(animationPosition + 1);
+        animationTimer = setTimeout(play, 500);
+        isPlaying = true;
+        updatePlayButton();
+    }
+
+    function playStop() {
+        if (!stop()) play();
+    }
+
+    function updatePlayButton() {
+        const iconSvg = document.getElementById('play-icon-svg');
+        const text = document.getElementById('play-text');
+        
+        if (isPlaying) {
+            iconSvg.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+            text.textContent = 'หยุด';
+        } else {
+            iconSvg.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+            text.textContent = 'เล่น';
+        }
+    }
+
+    function handleNavigation(direction) {
+        if (isNavigating) return;
+        isNavigating = true;
+        
+        targetZoom = map.getZoom();
+        targetCenter = map.getCenter();
+        
+        requestAnimationFrame(() => {
+            if (direction === 'prev') {
+                showFrame(animationPosition - 1);
+            } else if (direction === 'next') {
+                showFrame(animationPosition + 1);
+            }
+            
+            setTimeout(() => { isNavigating = false; }, 100);
+        });
+    }
+
+    document.getElementById('btn-prev').addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        stop();
+        handleNavigation('prev');
+    }, true);
+
+    document.getElementById('btn-next').addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        stop();
+        handleNavigation('next');
+    }, true);
+
+    document.getElementById('btn-play').addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        playStop();
+    }, true);
+
+    document.onkeydown = function(e) {
+        if (e.keyCode === 27 && calcModal.classList.contains('active')) {
+            calcModal.classList.remove('active');
+            e.preventDefault();
+            return;
+        }
+        
+        if (calcModal.classList.contains('active')) return;
+        
+        switch (e.keyCode) {
+            case 37: stop(); handleNavigation('prev'); e.preventDefault(); break;
+            case 39: stop(); handleNavigation('next'); e.preventDefault(); break;
+            case 32: playStop(); e.preventDefault(); break;
+        }
+    };
+
+    // ==================== Countdown Timers ====================
+    function calculateNextUpdateTime(intervalMinutes) {
+        const now = new Date();
+        const currentMinutes = now.getMinutes();
+        const currentSeconds = now.getSeconds();
+        
+        const nextMinutes = Math.ceil((currentMinutes + 1) / intervalMinutes) * intervalMinutes;
+        let minutesUntilNext = nextMinutes - currentMinutes;
+        
+        if (nextMinutes >= 60) {
+            minutesUntilNext = 60 - currentMinutes;
+        }
+        
+        return (minutesUntilNext * 60) - currentSeconds;
+    }
+
+    let radarRemainingSeconds = calculateNextUpdateTime(API_CONFIG.RADAR.updateInterval);
+
+    function startRadarCountdown() {
+        setInterval(() => {
+            radarRemainingSeconds--;
+            if (radarRemainingSeconds <= 0) {
+                console.log('🔄 Auto-refresh radar...');
+                loadRadarData();
+                radarRemainingSeconds = calculateNextUpdateTime(API_CONFIG.RADAR.updateInterval);
+            }
+            const m = Math.floor(radarRemainingSeconds / 60);
+            const s = radarRemainingSeconds % 60;
+            document.getElementById('radar-countdown').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+        }, 1000);
+    }
+
+    // ==================== METAR with Background Update ====================
+    function fetchMetarBackground() {
+        console.log('☁️  Fetching METAR in background...');
+        document.getElementById('metar-update-info').classList.add('loading');
+        
+        fetch(API_CONFIG.METAR.endpoint, {
+            headers: { 'X-API-Key': API_CONFIG.METAR.key }
+        })
+        .then(r => r.json())
+        .then(data => {
+            console.log('✅ METAR received in background');
+            if (data.data && data.data[0]) {
+                pendingMetarData = data.data[0];
+                // Apply update smoothly
+                applyMetarUpdate();
+            }
+            document.getElementById('metar-update-info').classList.remove('loading');
+        })
+        .catch(err => {
+            console.error('❌ METAR Error:', err);
+            document.getElementById('metar-update-info').classList.remove('loading');
+        });
+    }
+
+    function applyMetarUpdate() {
+        if (!pendingMetarData) return;
+        
+        const metar = pendingMetarData;
+        currentMetarData = metar;
+        
+        document.getElementById('metar-loading').style.display = 'none';
+        document.getElementById('metar-charts').style.display = 'grid';
+        document.getElementById('metar-info').style.display = 'grid';
+        document.getElementById('metar-raw-display').style.display = 'block';
+
+        if (metar.raw_text) {
+            document.getElementById('metar-raw-text').textContent = metar.raw_text;
+        }
+
+        const temp = metar.temperature?.celsius || 0;
+        const humidity = metar.humidity?.percent || 0;
+        const pressure = metar.barometer?.hpa || 1013;
+        const windSpeed = metar.wind?.speed_kts || 0;
+
+        // Smooth UI updates only when values change
+        if (lastMetarValues.temp !== temp) {
+            updateValueWithAnimation('temp-display', temp, '°C');
+            createDonutChart('tempChart', temp, 50, chartColors.temp);
+            lastMetarValues.temp = temp;
+        }
+
+        if (lastMetarValues.humidity !== humidity) {
+            updateValueWithAnimation('humidity-display', humidity, '%');
+            createDonutChart('humidityChart', humidity, 100, chartColors.humidity);
+            lastMetarValues.humidity = humidity;
+        }
+
+        if (lastMetarValues.pressure !== pressure) {
+            updateValueWithAnimation('pressure-display', pressure, 'hPa');
+            createDonutChart('pressureChart', pressure - 950, 100, chartColors.pressure);
+            lastMetarValues.pressure = pressure;
+        }
+
+        if (lastMetarValues.windSpeed !== windSpeed) {
+            updateValueWithAnimation('wind-display', windSpeed, 'kt');
+            createDonutChart('windChart', windSpeed, 50, chartColors.wind);
+            lastMetarValues.windSpeed = windSpeed;
+        }
+
+        document.getElementById('dewpoint-value').textContent = (metar.dewpoint?.celsius || '--') + '°C';
+        document.getElementById('wind-dir-value').textContent = metar.wind?.degrees ? metar.wind.degrees + '°' : 'VRB';
+        
+        // QNH value
+        const qnh = metar.barometer?.hpa;
+        if (qnh) {
+            document.getElementById('qnh-value').textContent = qnh + ' hPa';
+        } else {
+            document.getElementById('qnh-value').textContent = '-- hPa';
+        }
+        
+        const visibility = metar.visibility?.meters_float;
+        if (visibility >= 10000) {
+            document.getElementById('visibility-value').textContent = '>10 km';
+        } else if (visibility) {
+            document.getElementById('visibility-value').textContent = (visibility / 1000).toFixed(1) + ' km';
+        } else {
+            document.getElementById('visibility-value').textContent = '--';
+        }
+        
+        pendingMetarData = null;
+    }
+
+    let metarRemainingSeconds = calculateNextUpdateTime(API_CONFIG.METAR.updateInterval);
+
+    function startMetarCountdown() {
+        setInterval(() => {
+            metarRemainingSeconds--;
+            if (metarRemainingSeconds <= 0) {
+                console.log('🔄 Auto-refresh METAR...');
+                fetchMetarBackground();
+                metarRemainingSeconds = calculateNextUpdateTime(API_CONFIG.METAR.updateInterval);
+            }
+            const m = Math.floor(metarRemainingSeconds / 60);
+            const s = metarRemainingSeconds % 60;
+            document.getElementById('metar-countdown').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+        }, 1000);
+    }
+
+    // ==================== Current Time ====================
+    function updateCurrentTime() {
+        document.getElementById('current-time-display').textContent = 
+            new Date().toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    }
+    setInterval(updateCurrentTime, 1000);
+
+    // ==================== Initialize ====================
+    console.log('🎬 Starting all systems...');
+    
+    loadRadarData();
+    startRadarCountdown();
+    
+    fetchMetarBackground();
+    startMetarCountdown();
+    
+    updateCurrentTime();
+    
+    console.log('✅ System ready!');
+})();
 </script>
 
 </body>
 </html>
-
-
-
-
