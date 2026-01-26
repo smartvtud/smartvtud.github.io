@@ -2,7 +2,11 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#030712">
     <link rel="manifest" href="manifest.json">
     <title>Weather Radar System - VTUD</title>
     
@@ -56,7 +60,17 @@
             background-attachment: fixed;
             color: var(--text-primary);
             min-height: 100vh;
+            min-height: -webkit-fill-available;
             overflow-x: hidden;
+            /* iOS safe area */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        html {
+            height: -webkit-fill-available;
         }
 
         /* Scrollbar */
@@ -1069,7 +1083,8 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            z-index: 1000;
+            z-index: 1001;
+            pointer-events: auto;
         }
 
         .fullscreen-btn {
@@ -1084,6 +1099,7 @@
             justify-content: center;
             transition: all 0.2s ease;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
         }
 
         .fullscreen-btn:hover {
@@ -1101,30 +1117,86 @@
             stroke: white;
         }
 
-        /* Map Fullscreen Mode */
+        /* Map Fullscreen Mode - PWA Compatible */
         .radar-wrapper.map-fullscreen {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            z-index: 9999 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: -webkit-fill-available !important;
+            max-width: none !important;
+            max-height: none !important;
+            z-index: 99999 !important;
             border-radius: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
+            overflow: visible !important;
+            box-sizing: border-box !important;
+            background: var(--bg-primary) !important;
         }
 
         .radar-wrapper.map-fullscreen .map-container {
-            width: 100% !important;
-            height: 100% !important;
-            min-height: 100vh !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: -webkit-fill-available !important;
             border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
         }
 
         .radar-wrapper.map-fullscreen #mapid {
-            width: 100% !important;
-            height: 100% !important;
-            min-height: 100vh !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: -webkit-fill-available !important;
+            z-index: 1 !important;
+        }
+
+        .radar-wrapper.map-fullscreen .fullscreen-control {
+            position: fixed !important;
+            top: 10px !important;
+            right: 10px !important;
+            z-index: 100000 !important;
+        }
+
+        .radar-wrapper.map-fullscreen .measure-control,
+        .radar-wrapper.map-fullscreen .search-control,
+        .radar-wrapper.map-fullscreen .search-box,
+        .radar-wrapper.map-fullscreen #measure-clear-btn {
+            z-index: 100000 !important;
+        }
+
+        .radar-wrapper.map-fullscreen .map-controls {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 100000 !important;
+            border-radius: 0 !important;
+        }
+
+        /* Hide other elements when in fullscreen */
+        body.fullscreen-active .navbar,
+        body.fullscreen-active .main-container > *:not(.radar-wrapper) {
+            display: none !important;
+        }
+
+        body.fullscreen-active {
+            overflow: hidden !important;
+        }
+
+        body.fullscreen-active .main-container {
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         /* Native Fullscreen Mode */
@@ -1132,8 +1204,8 @@
         .map-container:-webkit-full-screen,
         .map-container:-moz-full-screen,
         .map-container:-ms-fullscreen {
-            width: 100% !important;
-            height: 100% !important;
+            width: 100vw !important;
+            height: 100vh !important;
             background: var(--bg-primary);
         }
 
@@ -1596,19 +1668,19 @@
 
         <div class="radar-wrapper">
             <div class="map-container">
+                <!-- Fullscreen Button - Outside mapid -->
+                <div class="fullscreen-control">
+                    <button class="fullscreen-btn" id="fullscreen-btn" title="เต็มหน้าจอ">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+                            <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+                            <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+                            <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+                        </svg>
+                    </button>
+                </div>
+
                 <div id="mapid">
-                    <!-- Fullscreen Button -->
-                    <div class="fullscreen-control">
-                        <button class="fullscreen-btn" id="fullscreen-btn" title="เต็มหน้าจอ">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
-                                <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
-                                <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
-                                <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
-                            </svg>
-                        </button>
-                    </div>
-                    
                     <!-- Measurement Tool -->
                     <div class="measure-control">
                         <button class="measure-btn" id="measure-btn" title="วัดระยะทาง">
@@ -2102,30 +2174,131 @@
     const fullscreenBtn = document.getElementById('fullscreen-btn');
     const radarWrapper = document.querySelector('.radar-wrapper');
     const mapContainer = document.querySelector('.map-container');
+    const mapElement = document.getElementById('mapid');
+    const navbar = document.querySelector('.navbar');
+    const radarCard = radarWrapper.closest('.card'); // Parent card ของ radar
     let isFullscreen = false;
 
     function invalidateMapSize() {
-        setTimeout(() => map.invalidateSize(), 50);
-        setTimeout(() => map.invalidateSize(), 100);
-        setTimeout(() => map.invalidateSize(), 200);
-        setTimeout(() => map.invalidateSize(), 500);
-        setTimeout(() => map.invalidateSize(), 1000);
+        const times = [0, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000];
+        times.forEach(t => setTimeout(() => {
+            try { 
+                map.invalidateSize({animate: false, pan: false}); 
+            } catch(e) {}
+        }, t));
     }
 
     function enterFullscreen() {
+        console.log('Entering fullscreen...');
         isFullscreen = true;
         
-        // Try native fullscreen first
-        if (mapContainer.requestFullscreen) {
-            mapContainer.requestFullscreen();
-        } else if (mapContainer.webkitRequestFullscreen) {
-            mapContainer.webkitRequestFullscreen();
-        } else if (mapContainer.msRequestFullscreen) {
-            mapContainer.msRequestFullscreen();
-        } else {
-            // Fallback to CSS fullscreen
-            radarWrapper.classList.add('map-fullscreen');
-            document.body.style.overflow = 'hidden';
+        // ซ่อน navbar
+        if (navbar) navbar.style.display = 'none';
+        
+        // ซ่อน elements อื่นๆ ใน main-container ยกเว้น radar card
+        document.querySelectorAll('.main-container > .card').forEach(card => {
+            if (card !== radarCard) {
+                card.style.display = 'none';
+            }
+        });
+        
+        // ตั้งค่า body
+        document.body.style.overflow = 'hidden';
+        document.body.style.margin = '0';
+        document.body.style.padding = '0';
+        
+        // ตั้งค่า main-container
+        const mainContainer = document.querySelector('.main-container');
+        if (mainContainer) {
+            mainContainer.style.margin = '0';
+            mainContainer.style.padding = '0';
+            mainContainer.style.maxWidth = 'none';
+            mainContainer.style.position = 'fixed';
+            mainContainer.style.top = '0';
+            mainContainer.style.left = '0';
+            mainContainer.style.width = '100vw';
+            mainContainer.style.height = '100vh';
+            mainContainer.style.zIndex = '99999';
+        }
+        
+        // ตั้งค่า radar card
+        if (radarCard) {
+            radarCard.style.cssText = `
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                z-index: 99999 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border-radius: 0 !important;
+                border: none !important;
+                background: transparent !important;
+            `;
+            // ซ่อน card header
+            const cardHeader = radarCard.querySelector('.card-header');
+            if (cardHeader) cardHeader.style.display = 'none';
+        }
+        
+        // ตั้งค่า radar-wrapper
+        radarWrapper.style.cssText = `
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            z-index: 1 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+        `;
+        
+        // ตั้งค่า map-container
+        mapContainer.style.cssText = `
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        `;
+        
+        // ตั้งค่า mapid
+        mapElement.style.cssText = `
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+        `;
+        
+        // ย้าย fullscreen button ให้อยู่บน
+        fullscreenBtn.parentElement.style.cssText = `
+            position: fixed !important;
+            top: 10px !important;
+            right: 10px !important;
+            z-index: 999999 !important;
+        `;
+        
+        // Map controls (play/pause buttons) - จัดกลางด้านล่าง
+        const mapControls = document.querySelector('.map-controls');
+        if (mapControls) {
+            mapControls.style.setProperty('position', 'fixed', 'important');
+            mapControls.style.setProperty('bottom', '30px', 'important');
+            mapControls.style.setProperty('left', '50%', 'important');
+            mapControls.style.setProperty('right', 'auto', 'important');
+            mapControls.style.setProperty('top', 'auto', 'important');
+            mapControls.style.setProperty('transform', 'translateX(-50%)', 'important');
+            mapControls.style.setProperty('width', 'auto', 'important');
+            mapControls.style.setProperty('z-index', '999999', 'important');
+            mapControls.style.setProperty('border-radius', '16px', 'important');
+            mapControls.style.setProperty('background', 'rgba(15, 23, 42, 0.95)', 'important');
+            mapControls.style.setProperty('backdrop-filter', 'blur(10px)', 'important');
+            mapControls.style.setProperty('padding', '12px 24px', 'important');
+            mapControls.style.setProperty('box-shadow', '0 4px 30px rgba(0,0,0,0.5)', 'important');
         }
         
         fullscreenBtn.innerHTML = `
@@ -2137,22 +2310,71 @@
             </svg>
         `;
         fullscreenBtn.title = 'ออกจากเต็มหน้าจอ';
+        
+        window.scrollTo(0, 0);
         invalidateMapSize();
+        console.log('Fullscreen entered');
     }
 
     function exitFullscreen() {
+        console.log('Exiting fullscreen...');
         isFullscreen = false;
         
-        if (document.exitFullscreen) {
-            document.exitFullscreen().catch(() => {});
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
+        // แสดง navbar
+        if (navbar) navbar.style.display = '';
+        
+        // แสดง cards อื่นๆ
+        document.querySelectorAll('.main-container > .card').forEach(card => {
+            card.style.display = '';
+        });
+        
+        // Reset body
+        document.body.style.overflow = '';
+        document.body.style.margin = '';
+        document.body.style.padding = '';
+        
+        // Reset main-container
+        const mainContainer = document.querySelector('.main-container');
+        if (mainContainer) {
+            mainContainer.style.cssText = '';
         }
         
-        radarWrapper.classList.remove('map-fullscreen');
-        document.body.style.overflow = '';
+        // Reset radar card
+        if (radarCard) {
+            radarCard.style.cssText = '';
+            const cardHeader = radarCard.querySelector('.card-header');
+            if (cardHeader) cardHeader.style.display = '';
+        }
+        
+        // Reset radar-wrapper
+        radarWrapper.style.cssText = '';
+        
+        // Reset map-container
+        mapContainer.style.cssText = '';
+        
+        // Reset mapid
+        mapElement.style.cssText = '';
+        
+        // Reset fullscreen button
+        fullscreenBtn.parentElement.style.cssText = '';
+        
+        // Reset map controls
+        const mapControls = document.querySelector('.map-controls');
+        if (mapControls) {
+            mapControls.style.removeProperty('position');
+            mapControls.style.removeProperty('bottom');
+            mapControls.style.removeProperty('left');
+            mapControls.style.removeProperty('right');
+            mapControls.style.removeProperty('top');
+            mapControls.style.removeProperty('transform');
+            mapControls.style.removeProperty('width');
+            mapControls.style.removeProperty('z-index');
+            mapControls.style.removeProperty('border-radius');
+            mapControls.style.removeProperty('background');
+            mapControls.style.removeProperty('backdrop-filter');
+            mapControls.style.removeProperty('padding');
+            mapControls.style.removeProperty('box-shadow');
+        }
         
         fullscreenBtn.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2163,12 +2385,15 @@
             </svg>
         `;
         fullscreenBtn.title = 'เต็มหน้าจอ';
+        
         invalidateMapSize();
+        console.log('Fullscreen exited');
     }
 
     fullscreenBtn.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
+        console.log('Fullscreen button clicked, isFullscreen:', isFullscreen);
         
         if (isFullscreen) {
             exitFullscreen();
@@ -2177,37 +2402,28 @@
         }
     });
 
-    // Listen for fullscreen change events
+    // Listen for native fullscreen change events
     document.addEventListener('fullscreenchange', function() {
-        if (!document.fullscreenElement) {
-            isFullscreen = false;
-            fullscreenBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
-                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
-                    <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
-                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
-                </svg>
-            `;
-            fullscreenBtn.title = 'เต็มหน้าจอ';
+        if (!document.fullscreenElement && isFullscreen) {
+            // Native fullscreen ถูกปิด แต่ CSS fullscreen ยังเปิดอยู่
+            // ให้ปิด CSS fullscreen ด้วย
+            exitFullscreen();
         }
         invalidateMapSize();
     });
 
     document.addEventListener('webkitfullscreenchange', function() {
-        if (!document.webkitFullscreenElement) {
-            isFullscreen = false;
-            fullscreenBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
-                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
-                    <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
-                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
-                </svg>
-            `;
-            fullscreenBtn.title = 'เต็มหน้าจอ';
+        if (!document.webkitFullscreenElement && isFullscreen) {
+            exitFullscreen();
         }
         invalidateMapSize();
+    });
+
+    // ESC key to exit fullscreen
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && isFullscreen) {
+            exitFullscreen();
+        }
     });
 
     // ==================== Measurement Tool ====================
@@ -2526,7 +2742,7 @@
     function addLayer(frame) {
         if (!radarLayers[frame.path]) {
             const source = new L.TileLayer(
-                apiData.host + frame.path + '/256/{z}/{x}/{y}/1/1_1.png',
+                apiData.host + frame.path + '/256/{z}/{x}/{y}/2/1_1.png',
                 { 
                     tileSize: 256, 
                     opacity: 0.01, 
@@ -2693,23 +2909,28 @@
         }
     };
 
-    // ==================== Countdown Timers ====================
+    // ==================== Countdown Timers (Real-time sync) ====================
     function calculateNextUpdateTime(intervalMinutes) {
         const now = new Date();
         const currentMinutes = now.getMinutes();
         const currentSeconds = now.getSeconds();
         
+        // คำนวณนาทีถัดไปที่หารด้วย interval ลงตัว
         const nextMinutes = Math.ceil((currentMinutes + 1) / intervalMinutes) * intervalMinutes;
-        let minutesUntilNext = nextMinutes - currentMinutes;
         
+        let secondsUntilNext;
         if (nextMinutes >= 60) {
-            minutesUntilNext = 60 - currentMinutes;
+            // ถ้าเกิน 60 นาที ให้ไปรอบถัดไปของชั่วโมงถัดไป
+            secondsUntilNext = (60 - currentMinutes) * 60 - currentSeconds;
+        } else {
+            secondsUntilNext = (nextMinutes - currentMinutes) * 60 - currentSeconds;
         }
         
-        return (minutesUntilNext * 60) - currentSeconds;
+        return Math.max(1, secondsUntilNext);
     }
 
-    let radarRemainingSeconds = calculateNextUpdateTime(API_CONFIG.RADAR.updateInterval);
+    // Radar Countdown (ทุก 10 นาที: xx:00, xx:10, xx:20, xx:30, xx:40, xx:50)
+    let radarRemainingSeconds = calculateNextUpdateTime(10);
 
     function startRadarCountdown() {
         setInterval(() => {
@@ -2717,7 +2938,7 @@
             if (radarRemainingSeconds <= 0) {
                 console.log('🔄 Auto-refresh radar...');
                 loadRadarData();
-                radarRemainingSeconds = calculateNextUpdateTime(API_CONFIG.RADAR.updateInterval);
+                radarRemainingSeconds = calculateNextUpdateTime(10);
             }
             const m = Math.floor(radarRemainingSeconds / 60);
             const s = radarRemainingSeconds % 60;
@@ -2817,7 +3038,8 @@
         pendingMetarData = null;
     }
 
-    let metarRemainingSeconds = calculateNextUpdateTime(API_CONFIG.METAR.updateInterval);
+    // METAR Countdown (ทุก 30 นาที: xx:00, xx:30)
+    let metarRemainingSeconds = calculateNextUpdateTime(30);
 
     function startMetarCountdown() {
         setInterval(() => {
@@ -2825,7 +3047,7 @@
             if (metarRemainingSeconds <= 0) {
                 console.log('🔄 Auto-refresh METAR...');
                 fetchMetarBackground();
-                metarRemainingSeconds = calculateNextUpdateTime(API_CONFIG.METAR.updateInterval);
+                metarRemainingSeconds = calculateNextUpdateTime(30);
             }
             const m = Math.floor(metarRemainingSeconds / 60);
             const s = metarRemainingSeconds % 60;
